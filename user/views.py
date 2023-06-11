@@ -76,8 +76,11 @@ class UserFollowUnfollowView(APIView):
             user_id = serializer.validated_data['user_id']
             try:
                 user_to_unfollow = User.objects.get(id=user_id)
-                request.user.following.remove(user_to_unfollow)
-                return Response(status=status.HTTP_200_OK)
+                if user_to_unfollow in request.user.following.all():
+                    request.user.following.remove(user_to_unfollow)
+                    return Response(status=status.HTTP_200_OK)
+                else:
+                    return Response({'error': _('User is not being followed.')}, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
         else:
