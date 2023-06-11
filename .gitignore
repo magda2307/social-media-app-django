@@ -1,0 +1,47 @@
+# Django project files
+*.pyc
+*.pyo
+__pycache__/
+db.sqlite3
+/static/
+/media/
+
+# Environment variables
+.env
+
+# IDE/Editor specific files
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Local development files
+venv/
+.envrc
+
+# Log files
+*.log
+
+# Dependency directories
+/node_modules/
+/bower_components/
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+*.class
+*.o
+*.so
+*.dll
+*.exe
+*.msi
+*.egg-info/
+*.egg
+*.whl
+dist/
+build/
+*.bak
+
+# Miscellaneous
+*.swp
+*~
