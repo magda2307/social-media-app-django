@@ -65,7 +65,7 @@ class UserProfileTestCase(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.email, 'updated@example.com')
         self.assertNotEqual(self.user.password, 'newpassword123')
-        
+
 
 class UserFollowUnfollowViewTest(TestCase):
     def setUp(self):
@@ -75,41 +75,40 @@ class UserFollowUnfollowViewTest(TestCase):
         self.user_to_follow = User.objects.create_user(email='user_to_follow@example.com', password='testpassword')
         self.follow_url = reverse('user-follow')
         self.unfollow_url = reverse('user-unfollow')
-        self.payload = {'user_id':self.user_to_follow.id}
-        
+        self.payload = {'user_id': self.user_to_follow.id}
+        self.non_existent_user_id = 9999 # ID of a non-existent user
     def _follow_user(self):
-        return self.client.post(self.follow_url,self.payload)
-    
+        return self.client.post(self.follow_url, self.payload)
+
     def _assertions_state_follow_count(self, res, count, status=status.HTTP_200_OK):
         self.assertEqual(res.status_code, status)
         self.assertEqual(self.user.following.count(), count)
         self.assertEqual(self.user_to_follow.followers.count(), count)
-        
+
     def test_user_follow(self):
         """Test following another user."""
         res = self._follow_user()
-        self._assertions_state_follow_count(res=res, count=1, status = status.HTTP_200_OK)
-    
+        self._assertions_state_follow_count(res=res, count=1, status=status.HTTP_200_OK)
+
     def test_user_unfollow(self):
         """Test unfollowing another user."""
         res_follow = self._follow_user()
         res_unfollow = self.client.delete(self.unfollow_url, self.payload)
         self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_200_OK)
-    
+
     def test_follow_nonexistent_user(self):
         """Test following a non-existent user."""
-        non_existent_user_id = 9999  # ID of a non-existent user
-        self.payload['user_id'] = non_existent_user_id
+        self.payload['user_id'] = self.non_existent_user_id
         res = self._follow_user()
         self._assertions_state_follow_count(res, 0, status.HTTP_404_NOT_FOUND)
-        
+
     def test_unfollow_nonexistent_user(self):
         """Test unfollowing a non-existent user."""
         non_existent_user_id = 9999  # ID of a non-existent user
-        self.payload['user_id'] = non_existent_user_id
+        self.payload['user_id'] = self.non_existent_user_id
         res_unfollow = self.client.delete(self.unfollow_url, self.payload)
         self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_404_NOT_FOUND)
-    
+
     def test_unfollow_user_not_followed(self):
         """Test unfollowing a user that is not being followed."""
         user_to_unfollow = User.objects.create_user(email='user_to_unfollow@example.com', password='testpassword')
