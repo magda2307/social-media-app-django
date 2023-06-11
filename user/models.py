@@ -9,11 +9,12 @@ class User(AbstractUser):
     bio = models.CharField(max_length=255, blank=True)
     is_admin = models.BooleanField(default=False)
     followers = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='following')
-    ##posts = 
-    ##tags =
+    ## posts = models.ManyToManyField('Post', blank=True, related_name='user_posts')
+    ## tags = models.ManyToManyField('Tag', blank=True, related_name='user_tags')
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     
     def __str__(self):
         return self.email
+    
