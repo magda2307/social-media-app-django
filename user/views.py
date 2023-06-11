@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer
-from rest_framework.authtoken.views import ObtainAuthToken, Token
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework import authentication, permissions, status
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView
 from .models import User
@@ -12,27 +12,29 @@ class CreateTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
     serializer_class = AuthTokenSerializer
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
-    
+
 class UserRegistrationView(APIView):
     """API View for user registration."""
     serializer_class = UserSerializer
-    permission_classes=[]
+    permission_classes = []
+
     def post(self, request):
         """Handle user registration."""
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class UserLoginView(APIView):
     """API View for user login."""
     serializer_class = AuthTokenSerializer
-    permission_classes=[]
+    permission_classes = []
+
     def post(self, request):
         """Handle user authentication and login."""
         create_token_view = CreateTokenView.as_view()
-        return create_token_view(request = request._request)
+        return create_token_view(request=request._request)
 
 class UserProfileView(RetrieveAPIView):
     """API view for user profile retrieval by id."""
@@ -41,12 +43,13 @@ class UserProfileView(RetrieveAPIView):
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'id'
-    
+
 class UserProfileEditView(UpdateAPIView):
     """API view for editing user profile."""
     serializer_class = UserSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+
     def get_object(self):
         return self.request.user
 
@@ -55,7 +58,7 @@ class UserFollowUnfollowView(APIView):
     serializer_class = FollowSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def post(self, request):
         """Follow a user."""
         serializer = self.serializer_class(data=request.data)
@@ -67,8 +70,8 @@ class UserFollowUnfollowView(APIView):
                 return Response(status=status.HTTP_200_OK)
             except User.DoesNotExist:
                 return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def delete(self, request):
         """Unfollow a user."""
         serializer = self.serializer_class(data=request.data)
@@ -83,8 +86,7 @@ class UserFollowUnfollowView(APIView):
                     return Response({'error': _('User is not being followed.')}, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserFollowersView(ListAPIView):
     """API view for listing followers for specified user."""
@@ -92,16 +94,16 @@ class UserFollowersView(ListAPIView):
     queryset = User.objects.all()
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request, id):
         """Get list of specified user followers."""
         try:
             user = self.queryset.get(id=id)
             followers = user.followers.all()
             serializer = self.serializer_class(followers, many=True)
-            return Response(serializer.validated_data(), status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
-
 
 class UserFollowingView(ListAPIView):
     """API view for listing following for specified user."""
@@ -109,12 +111,12 @@ class UserFollowingView(ListAPIView):
     queryset = User.objects.all()
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get(self, request, id):
         try:
             user = self.queryset.get(id=id)
             following = user.following.all()
             serializer = self.serializer_class(following, many=True)
-            return Response(serializer.validated_data(), status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
