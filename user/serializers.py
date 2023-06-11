@@ -20,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
         return get_user_model().objects.create_user(**validated_data)
     
     def update(self, instance, validated_data):
+        """Update and return an user."""
         password = validated_data.pop('password', None)
         user = super().update(instance, validated_data)
         if password:
@@ -51,3 +52,7 @@ class AuthTokenSerializer(serializers.Serializer):
         
         attrs['user'] = user
         return attrs
+
+class FollowSerializer(serializers.Serializer):
+    """Serializer for the following/unfollowing actions."""
+    user_id = serializers.IntegerField()

@@ -27,6 +27,4 @@ class UserAdmin(BaseUserAdmin):
             ),
         }),
     )
-    
-    #exclude = ('username',)
 admin.site.register(User, UserAdmin)

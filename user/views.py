@@ -1,11 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, AuthTokenSerializer
+from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer
 from rest_framework.authtoken.views import ObtainAuthToken, Token
 from rest_framework import authentication, permissions, status
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView
 from .models import User
 from rest_framework.settings import api_settings
+from django.utils.translation import gettext as _
 
 class CreateTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
@@ -39,9 +40,42 @@ class UserProfileView(RetrieveAPIView):
     queryset = User.objects.all()
     lookup_field = 'id'
     
-class UserProfileEdit(UpdateAPIView):
+class UserProfileEditView(UpdateAPIView):
     """API view for editing user profile."""
     serializer_class = UserSerializer
     
     def get_object(self):
         return self.request.user
+
+class UserFollowUnfollowView(APIView):
+    """API view for following/unfollowing another user. """
+    serializer_class = FollowSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Follow a user."""
+        serializer = self.serializer_class(request.data)
+        if serializer.is_valid():
+            user_id = serializer.validated_data['user_id']
+            try:
+                user_to_follow = User.objects.get(id=user_id)
+                request.user.followers.add(user_to_follow)
+                return Response(status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request):
+        """Unfollow a user."""
+        serializer = self.serializer_class(request.data)
+        if serializer.is_valid():
+            user_id = serializer.validated_data['user_id']
+            try:
+                user_to_unfollow = User.objects.get(id=user_id)
+                request.user.followers.remove(user_to_unfollow)
+                return Response(status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
