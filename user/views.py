@@ -28,6 +28,7 @@ class UserRegistrationView(APIView):
 class UserLoginView(APIView):
     """API View for user login."""
     serializer_class = AuthTokenSerializer
+    permission_classes=[]
     def post(self, request):
         """Handle user authentication and login."""
         create_token_view = CreateTokenView.as_view()
