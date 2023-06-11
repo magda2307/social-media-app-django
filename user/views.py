@@ -24,7 +24,6 @@ class UserRegistrationView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
-
 class UserLoginView(APIView):
     """API View for user login."""
     serializer_class = AuthTokenSerializer
@@ -38,8 +37,7 @@ class UserProfileView(RetrieveAPIView):
     """API view for user profile retrieval by id."""
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    lookup_field = ['id']
-    
+    lookup_field = 'id'
     
 class UserProfileEdit(UpdateAPIView):
     """API view for editing user profile."""

@@ -23,6 +23,7 @@ class UserRegistrationLoginTestCase(APITestCase):
             'email': 'test@example.com',
             'password': 'password123',
         }
+        self.client = APIClient()
     def test_user_registration(self):
 
         response = self.client.post(self.register_url, self.user_data, format='json')
@@ -37,3 +38,28 @@ class UserRegistrationLoginTestCase(APITestCase):
         response = self.client.post(self.login_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
+
+class UserProfileTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email='test@example.com', password='password123')
+        self.profile_url = reverse('user-profile', kwargs={'id': self.user.id})
+        self.edit_url = reverse('user-profile-edit')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        
+    def test_user_profile_retrieval(self):
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], 'test@example.com')
+
+    def test_user_profile_edit(self):
+
+        data = {
+            'email': 'updated@example.com',
+            'password': 'newpassword123'
+        }
+        response = self.client.put(self.edit_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, 'updated@example.com')
+        self.assertNotEqual(self.user.password, 'newpassword123')
