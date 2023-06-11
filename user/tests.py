@@ -15,7 +15,6 @@ from rest_framework import status
 from .models import User
 
 class UserRegistrationLoginTestCase(APITestCase):
-    
     def setUp(self):
         self.register_url = reverse('user-registration')
         self.login_url = reverse('user-login')
@@ -24,8 +23,9 @@ class UserRegistrationLoginTestCase(APITestCase):
             'password': 'password123',
         }
         self.client = APIClient()
-    def test_user_registration(self):
 
+    def test_user_registration(self):
+        """Test user registration API endpoint."""
         response = self.client.post(self.register_url, self.user_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 1)
@@ -33,6 +33,7 @@ class UserRegistrationLoginTestCase(APITestCase):
         self.assertNotEqual(User.objects.get().password, 'password123')
 
     def test_user_login(self):
+        """Test user login API endpoint."""
         data = self.user_data
         User.objects.create_user(**data)
         response = self.client.post(self.login_url, data, format='json')
@@ -48,12 +49,22 @@ class UserProfileTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
         
     def test_user_profile_retrieval(self):
+        """Test user profile retrieval API endpoint."""
         response = self.client.get(self.profile_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['email'], 'test@example.com')
 
-    def test_user_profile_edit(self):
+    def test_other_user_profile_retrieval(self):
+        """Test other than user logged profile retrieval API endpoint."""
+        other_user = User.objects.create_user(email='other_user@example.com',
+                                            password='password123')
+        response = self.client.get(reverse('user-profile', kwargs={'id': other_user.id}))
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], 'other_user@example.com')
 
+    def test_user_profile_edit(self):
+        """Test user profile edit API endpoint."""
         data = {
             'email': 'updated@example.com',
             'password': 'newpassword123'
