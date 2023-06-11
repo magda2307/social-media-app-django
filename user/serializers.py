@@ -15,9 +15,9 @@ class UserSerializer(serializers.ModelSerializer):
             'min_length': 5
             }}
         
-"""    def create(self, validated_data):
-        return super().create(validated_data)
-    get_user_model().objects.create_user"""
+    def create(self, validated_data):
+        """Create and return a user with an encrypted password"""
+        return get_user_model().objects.create_user(**validated_data)
     
     
 class AuthTokenSerializer(serializers.Serializer):
