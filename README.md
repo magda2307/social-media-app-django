@@ -4,6 +4,7 @@ Project in progress.
 This repository contains the code for a Django-based API project. The project aims to provide a user management system with registration, login, profile management, and social features such as following/unfollowing other users.
 
 **Implemented Features:**
+
 -User Registration: Users can register by providing necessary information, including username, email, and password. The registration process is handled through the UserRegistrationAPIView API view.
 
 -User Login: Registered users can log in using their credentials. The login functionality is implemented in the UserLoginAPIView API view.
