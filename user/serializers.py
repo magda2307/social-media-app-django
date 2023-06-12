@@ -3,16 +3,21 @@ from .models import User, Post
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext as _
 
-class PostSerializer(serializers.Serializer):
+class PostSerializer(serializers.ModelSerializer):
     """Serializer for the Post object.."""
     class Meta:
         model = Post
-        fields = ['id', 'text', 'image', 'date_created']
-        read_only_fields = ['id', 'date_created']
+        fields = ['id', 'text', 'image', 'date_created', 'user']
+        read_only_fields = ['id', 'date_created', 'user']
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['user'] = user
+        return super().create(validated_data)
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User object."""
-    posts = PostSerializer(many=True, read_only=True)
+    posts = PostSerializer(many=True, required=False, read_only=True)
     class Meta:
         model = User
         fields = ['id', 'email', 'password', 'profile_picture', 'bio', 'is_admin',

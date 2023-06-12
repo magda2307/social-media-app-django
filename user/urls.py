@@ -3,7 +3,7 @@ from django.urls import include, path
 from .views import UserRegistrationView, UserLoginView, UserProfileView, UserProfileEditView, CreateTokenView, UserFollowUnfollowView, UserFollowingListView, UserFollowersListView, UserCreateRetrieveUpdatePost
 
 router = routers.DefaultRouter()
-router.register(r'posts', UserCreateRetrieveUpdatePost)
+router.register(r'posts', UserCreateRetrieveUpdatePost, basename='posts')
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user-registration'),
@@ -15,6 +15,6 @@ urlpatterns = [
     path('unfollow/', UserFollowUnfollowView.as_view(), name='user-unfollow'),
     path('profile/<int:id>/following',UserFollowingListView.as_view() , name='user-profile-following'),
     path('profile/<int:id>/followers', UserFollowersListView.as_view() , name='user-profile-followers'),
-    path('', include(router.urls), name = 'posts'),
+    path('', include(router.urls)),
 ]
 

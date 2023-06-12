@@ -29,7 +29,7 @@ class User(AbstractBaseUser):
     bio = models.CharField(max_length=255, blank=True)
     is_admin = models.BooleanField(default=False)
     followers = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='following')
-    posts = models.ManyToManyField('Post', blank=True, related_name='user_posts')
+    posts = models.ManyToManyField('Post', blank=True, related_name='posts')
     ## tags = models.ManyToManyField('Tag', blank=True, related_name='user_tags')
     
     objects = UserManager()
@@ -40,10 +40,11 @@ class User(AbstractBaseUser):
     
 class Post(models.Model):
     """Post model for the social media app."""
-    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    user = models.ForeignKey('User', on_delete=models.CASCADE, null=False)
     text = models.CharField(max_length=255, blank=False)
     image = models.URLField(blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
+    
     ## tags = models.ManyToManyField('Tag',blank=True, related_name='post_tags')
     ## likes = models.ManyToManyField('User', blank=True, related_name = 'liked_posts')
     def __str__(self):

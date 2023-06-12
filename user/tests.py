@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from .models import User
+from .models import User, Post
 
 
 class UserRegistrationLoginTestCase(TestCase):
@@ -122,8 +122,8 @@ class UserCRUDPostTest(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
         self.user2 = User.objects.create_user(email='user2@example.com', password='testpassword')
-        self.url = reverse('posts')
-        self.payload = {'user' : self.user, 'text' : 'Test' }
+        self.url = reverse('posts-list')
+        self.payload = {'text': 'Test'}
 
     def _create_a_post(self):
         return self.client.post(self.url, self.payload)
@@ -131,7 +131,10 @@ class UserCRUDPostTest(TestCase):
     def test_user_create_a_post_no_image(self):
         """Test for a post by authenticated user without an image."""
         res = self._create_a_post()
-        
+        self.assertEqual(Post.objects.count(), 1)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(self.user.posts.count(), 1)
+        print(User.objects.get(id=self.user.id).post_set)
+        print(Post.objects.get(id=res.data['id']).user)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.post_set.count(), 1) #TODO - this is not working properly
         
