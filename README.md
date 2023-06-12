@@ -1,7 +1,7 @@
 # social-media-app-django
 
 Project in progress. 
-This repository contains the code for a Django-based API project. The project aims to provide a user management system with registration, login, profile management, and social features such as following/unfollowing other users.
+This repository contains the code for a Django-based API project. The project aims to provide a user management system with registration, login, profile management, and social features such as following/unfollowing other users, posting posts with/without photos and viewing user's feed in future.
 
 **Implemented Features:**
 
