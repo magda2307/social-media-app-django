@@ -1,6 +1,8 @@
 # social-media-app-django
 
-Project in progress.
+Project in progress. 
+Currently implemented:
+- User model with follow/unfollow actions.
 
 
 ## Setting Up PostgreSQL Environment
