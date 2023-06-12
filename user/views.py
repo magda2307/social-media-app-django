@@ -88,7 +88,7 @@ class UserFollowUnfollowView(APIView):
                 return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UserFollowersView(ListAPIView):
+class UserFollowersListView(ListAPIView):
     """API view for listing followers for specified user."""
     serializer_class = UserSerializer
     queryset = User.objects.all()
@@ -105,7 +105,7 @@ class UserFollowersView(ListAPIView):
         except User.DoesNotExist:
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
 
-class UserFollowingView(ListAPIView):
+class UserFollowingListView(ListAPIView):
     """API view for listing following for specified user."""
     serializer_class = UserSerializer
     queryset = User.objects.all()
