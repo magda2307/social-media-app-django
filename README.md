@@ -1,10 +1,20 @@
 # social-media-app-django
 
 Project in progress. 
-Currently implemented:
-- User model with follow/unfollow actions.
+This repository contains the code for a Django-based API project. The project aims to provide a user management system with registration, login, profile management, and social features such as following/unfollowing other users.
 
+**Implemented Features:**
+-User Registration: Users can register by providing necessary information, including username, email, and password. The registration process is handled through the UserRegistrationAPIView API view.
 
+-User Login: Registered users can log in using their credentials. The login functionality is implemented in the UserLoginAPIView API view.
+
+User Profile: Users can view and edit their profiles. The UserProfileAPIView API view allows users to retrieve and update their profile information.
+
+-Following/Unfollowing Users: Users can follow/unfollow other users. The UserFollowAPIView API view handles the follow and unfollow actions.
+
+-List of Followers and Following: Users can view a list of their followers and the users they are following. The UserFollowersAPIView and UserFollowingAPIView API views provide these lists.
+
+-CRUD Operations on Posts: Users can perform CRUD (Create, Retrieve, Update, Delete) operations on posts using the UserPostViewSet viewset.
 ## Setting Up PostgreSQL Environment
 
 To run this project locally, you will need to set up a PostgreSQL database and configure the necessary environment variables. Follow the instructions below to get started:
