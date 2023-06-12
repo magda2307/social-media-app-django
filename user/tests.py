@@ -133,8 +133,4 @@ class UserCRUDPostTest(TestCase):
         res = self._create_a_post()
         self.assertEqual(Post.objects.count(), 1)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        print(User.objects.get(id=self.user.id).post_set)
-        print(Post.objects.get(id=res.data['id']).user)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.post_set.count(), 1) #TODO - this is not working properly
-        
+        self.assertEqual(self.user.posts.count(), 1)
