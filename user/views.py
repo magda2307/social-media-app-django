@@ -1,12 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer
+from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework import authentication, permissions, status
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView
-from .models import User
+from .models import User, Post
 from rest_framework.settings import api_settings
 from django.utils.translation import gettext as _
+from rest_framework import viewsets
+
 
 class CreateTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
@@ -120,3 +122,23 @@ class UserFollowingListView(ListAPIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
+
+class UserCreateRetrieveUpdatePost(viewsets.ModelViewSet):
+    """Viewset for handlng CRUD operations on Post."""
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    
+    def get_permissions(self):  
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action == 'list':
+            permission_classes = [permissions.IsAdminUser]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    
+
+    
+    

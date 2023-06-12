@@ -115,3 +115,23 @@ class UserFollowUnfollowViewTest(TestCase):
         payload = {'user_id': user_to_unfollow.id}
         res_unfollow = self.client.delete(self.unfollow_url, payload)
         self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_400_BAD_REQUEST)
+
+class UserCRUDPostTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email='user@example.com', password='testpassword')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.user2 = User.objects.create_user(email='user2@example.com', password='testpassword')
+        self.url = reverse('posts')
+        self.payload = {'user' : self.user, 'text' : 'Test' }
+
+    def _create_a_post(self):
+        return self.client.post(self.url, self.payload)
+    
+    def test_user_create_a_post_no_image(self):
+        """Test for a post by authenticated user without an image."""
+        res = self._create_a_post()
+        
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.user.posts.count(), 1)
+        

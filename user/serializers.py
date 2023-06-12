@@ -1,14 +1,23 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Post
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext as _
+
+class PostSerializer(serializers.Serializer):
+    """Serializer for the Post object.."""
+    class Meta:
+        model = Post
+        fields = ['id', 'text', 'image', 'date_created']
+        read_only_fields = ['id', 'date_created']
+
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User object."""
+    posts = PostSerializer(many=True, read_only=True)
     class Meta:
         model = User
         fields = ['id', 'email', 'password', 'profile_picture', 'bio', 'is_admin',
-                'followers', 'following']
-        read_only_fields = ['id', 'is_admin', 'followers','following']
+                'followers', 'following', 'posts']
+        read_only_fields = ['id', 'is_admin', 'followers','following', 'posts']
         
         extra_kwargs = {'password': {
             'write_only' : 'true',
@@ -56,3 +65,5 @@ class AuthTokenSerializer(serializers.Serializer):
 class FollowSerializer(serializers.Serializer):
     """Serializer for the following/unfollowing actions."""
     user_id = serializers.IntegerField()
+    
+
