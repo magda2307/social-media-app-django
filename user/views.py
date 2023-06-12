@@ -124,7 +124,7 @@ class UserFollowingListView(ListAPIView):
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
 
 class UserCreateRetrieveUpdatePost(viewsets.ModelViewSet):
-    """Viewset for handlng CRUD operations on Post."""
+    """Viewset for handling CRUD operations on Post."""
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]

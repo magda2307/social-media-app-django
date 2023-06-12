@@ -76,7 +76,8 @@ class UserFollowUnfollowViewTest(TestCase):
         self.follow_url = reverse('user-follow')
         self.unfollow_url = reverse('user-unfollow')
         self.payload = {'user_id': self.user_to_follow.id}
-        self.non_existent_user_id = 9999 # ID of a non-existent user
+        self.non_existent_user_id = 9999  # ID of a non-existent user
+
     def _follow_user(self):
         return self.client.post(self.follow_url, self.payload)
 
@@ -116,6 +117,7 @@ class UserFollowUnfollowViewTest(TestCase):
         res_unfollow = self.client.delete(self.unfollow_url, payload)
         self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserCRUDPostTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email='user@example.com', password='testpassword')
@@ -127,7 +129,7 @@ class UserCRUDPostTest(TestCase):
 
     def _create_a_post(self):
         return self.client.post(self.url, self.payload)
-    
+
     def test_user_create_a_post_no_image(self):
         """Test for a post by authenticated user without an image."""
         res = self._create_a_post()
