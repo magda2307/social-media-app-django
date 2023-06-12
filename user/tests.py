@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from .models import User
+from .models import User, Post
 
 
 class UserRegistrationLoginTestCase(TestCase):
@@ -65,7 +65,7 @@ class UserProfileTestCase(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.email, 'updated@example.com')
         self.assertNotEqual(self.user.password, 'newpassword123')
-        
+
 
 class UserFollowUnfollowViewTest(TestCase):
     def setUp(self):
@@ -75,28 +75,66 @@ class UserFollowUnfollowViewTest(TestCase):
         self.user_to_follow = User.objects.create_user(email='user_to_follow@example.com', password='testpassword')
         self.follow_url = reverse('user-follow')
         self.unfollow_url = reverse('user-unfollow')
-        
+        self.payload = {'user_id': self.user_to_follow.id}
+        self.non_existent_user_id = 9999 # ID of a non-existent user
+    def _follow_user(self):
+        return self.client.post(self.follow_url, self.payload)
+
+    def _assertions_state_follow_count(self, res, count, status=status.HTTP_200_OK):
+        self.assertEqual(res.status_code, status)
+        self.assertEqual(self.user.following.count(), count)
+        self.assertEqual(self.user_to_follow.followers.count(), count)
+
     def test_user_follow(self):
         """Test following another user."""
-        url = self.follow_url
-        user_id = self.user_to_follow.id
-        payload = {'user_id':user_id}
-        res = self.client.post(url,payload)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.user.following.count(), 1)
-        self.assertEqual(self.user_to_follow.followers.count(), 1)
-    
+        res = self._follow_user()
+        self._assertions_state_follow_count(res=res, count=1, status=status.HTTP_200_OK)
+
     def test_user_unfollow(self):
         """Test unfollowing another user."""
-        url_follow = self.follow_url
-        url_unfollow = self.unfollow_url
+        res_follow = self._follow_user()
+        res_unfollow = self.client.delete(self.unfollow_url, self.payload)
+        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_200_OK)
+
+    def test_follow_nonexistent_user(self):
+        """Test following a non-existent user."""
+        self.payload['user_id'] = self.non_existent_user_id
+        res = self._follow_user()
+        self._assertions_state_follow_count(res, 0, status.HTTP_404_NOT_FOUND)
+
+    def test_unfollow_nonexistent_user(self):
+        """Test unfollowing a non-existent user."""
+        non_existent_user_id = 9999  # ID of a non-existent user
+        self.payload['user_id'] = self.non_existent_user_id
+        res_unfollow = self.client.delete(self.unfollow_url, self.payload)
+        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_404_NOT_FOUND)
+
+    def test_unfollow_user_not_followed(self):
+        """Test unfollowing a user that is not being followed."""
+        user_to_unfollow = User.objects.create_user(email='user_to_unfollow@example.com', password='testpassword')
+        payload = {'user_id': user_to_unfollow.id}
+        res_unfollow = self.client.delete(self.unfollow_url, payload)
+        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_400_BAD_REQUEST)
+
+class UserCRUDPostTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email='user@example.com', password='testpassword')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.user2 = User.objects.create_user(email='user2@example.com', password='testpassword')
+        self.url = reverse('posts-list')
+        self.payload = {'text': 'Test'}
+
+    def _create_a_post(self):
+        return self.client.post(self.url, self.payload)
+    
+    def test_user_create_a_post_no_image(self):
+        """Test for a post by authenticated user without an image."""
+        res = self._create_a_post()
+        self.assertEqual(Post.objects.count(), 1)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        print(User.objects.get(id=self.user.id).post_set)
+        print(Post.objects.get(id=res.data['id']).user)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.post_set.count(), 1) #TODO - this is not working properly
         
-        user_id = self.user_to_follow.id
-        
-        payload = {'user_id':user_id}
-        res_follow = self.client.post(url_follow,payload)
-        res_unfollow = self.client.delete(url_unfollow, payload)
-        
-        self.assertEqual(res_unfollow.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.user.following.count(), 0)
-        self.assertEqual(self.user_to_follow.followers.count(), 0)
