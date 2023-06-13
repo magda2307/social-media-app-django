@@ -205,4 +205,4 @@ class TagTests(TestCase):
         self.assertIn('Existing Tag 1', tag_names)
         self.assertIn('Existing Tag 2', tag_names)
         self.assertEqual(Tag.objects.all().count(),2)
-        
+    
