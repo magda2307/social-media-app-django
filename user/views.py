@@ -1,19 +1,20 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer
+from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework import authentication, permissions, status
-from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView
-from .models import User, Post
+from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from .models import User, Post, Tag
 from rest_framework.settings import api_settings
 from django.utils.translation import gettext as _
 from rest_framework import viewsets
 
 
-class CreateTokenView(ObtainAuthToken):
+class ObtainAuthTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
     serializer_class = AuthTokenSerializer
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+
 
 class UserRegistrationView(APIView):
     """API View for user registration."""
@@ -28,6 +29,7 @@ class UserRegistrationView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserLoginView(APIView):
     """API View for user login."""
     serializer_class = AuthTokenSerializer
@@ -35,8 +37,9 @@ class UserLoginView(APIView):
 
     def post(self, request):
         """Handle user authentication and login."""
-        create_token_view = CreateTokenView.as_view()
-        return create_token_view(request=request._request)
+        obtain_auth_token_view = ObtainAuthTokenView.as_view()
+        return obtain_auth_token_view(request=request._request)
+
 
 class UserProfileView(RetrieveAPIView):
     """API view for user profile retrieval by id."""
@@ -45,6 +48,7 @@ class UserProfileView(RetrieveAPIView):
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'id'
+
 
 class UserProfileEditView(UpdateAPIView):
     """API view for editing user profile."""
@@ -55,7 +59,8 @@ class UserProfileEditView(UpdateAPIView):
     def get_object(self):
         return self.request.user
 
-class UserFollowUnfollowView(APIView):
+
+class UserFollowView(APIView):
     """API view for following/unfollowing another user. """
     serializer_class = FollowSerializer
     authentication_classes = [authentication.TokenAuthentication]
@@ -90,6 +95,7 @@ class UserFollowUnfollowView(APIView):
                 return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserFollowersListView(ListAPIView):
     """API view for listing followers for specified user."""
     serializer_class = UserSerializer
@@ -107,6 +113,7 @@ class UserFollowersListView(ListAPIView):
         except User.DoesNotExist:
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
 
+
 class UserFollowingListView(ListAPIView):
     """API view for listing following for specified user."""
     serializer_class = UserSerializer
@@ -123,23 +130,58 @@ class UserFollowingListView(ListAPIView):
         except User.DoesNotExist:
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
 
-class UserCreateRetrieveUpdatePost(viewsets.ModelViewSet):
+
+class PostViewSet(viewsets.ModelViewSet):
     """Viewset for handling CRUD operations on Post."""
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_permissions(self):  
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action == 'list':
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.IsAuthenticated]
-        return [permission() for permission in permission_classes]
-    
 
-    
-    
+class TagListCreateView(ListCreateAPIView):
+    """API view for creating and retrieving Tags."""
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class UserTagListView(ListAPIView):
+    """API view for retrieving a list of user's own tags."""
+    serializer_class = TagSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Tag.objects.filter(user=user)
+
+
+class TagUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+    """API view for updating and destroying tags for admin."""
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+
+
+class UnusedTagDestroyView(APIView):
+    """API View for destroying unused, own tags by user."""
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, tag_id):
+        try:
+            user = self.request.user
+            tag = Tag.objects.get(id=tag_id)
+            if tag.posts.exists():
+                return Response({'error': 'Cannot delete tag with associated posts.'}, status=400)
+            if tag.user != user:
+                return Response({'error': 'Cannot delete another user\'s tag.'}, status=400)
+            tag.delete()
+            return Response(status=204)
+        except Tag.DoesNotExist:
+            return Response({'error': 'Tag not found.'}, status=404)
+
+

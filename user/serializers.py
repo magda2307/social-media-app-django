@@ -1,31 +1,59 @@
 from rest_framework import serializers
-from .models import User, Post
+from .models import User, Post, Tag
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext as _
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'user', 'name']
+        read_only_fields = ['id']
+        
+    def create(self, validated_data):
+        tag_name = validated_data.get('name')
+        user = self.context['request'].user
 
+        # Check if a tag with the same name exists
+        tag = Tag.objects.filter(name=tag_name).first()
+
+        # If tag doesn't exist, create a new one
+        if not tag:
+            tag = Tag.objects.create(name=tag_name, user=user)
+
+        return tag
 class PostSerializer(serializers.ModelSerializer):
     """Serializer for the Post object."""
+    tags = TagSerializer(many=True, required=False)
     class Meta:
         model = Post
-        fields = ['id', 'text', 'image', 'date_created', 'user']
+        fields = ['id', 'text', 'image', 'date_created', 'user', 'tags']
         read_only_fields = ['id', 'date_created', 'user']
-
+    def validate_tags(self, tags):
+        return tags
+        
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user
-        return super().create(validated_data)
-
+        tags = validated_data.pop('tags', [])
+        post = super().create(validated_data)
+        for tag in tags:
+            tag_name = tag.get('name')
+            if Tag.objects.filter(name=tag_name).first() is None:
+                tag = Tag.objects.create(name=tag_name, user=user)
+            else:
+                tag = Tag.objects.get(name=tag_name)
+            post.tags.add(tag)
+        return post
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User object."""
-    posts = PostSerializer(many=True, required=False, read_only=True)
+    posts = PostSerializer(many=True, required=False,read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'password', 'profile_picture', 'bio', 'is_admin',
+        fields = ['id', 'email', 'password', 'profile_picture', 'bio', 'is_staff',
                 'followers', 'following', 'posts']
-        read_only_fields = ['id', 'is_admin', 'followers', 'following', 'posts']
+        read_only_fields = ['id', 'is_staff', 'followers', 'following', 'posts']
 
         extra_kwargs = {
             'password': {
