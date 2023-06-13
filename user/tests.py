@@ -253,3 +253,27 @@ class UnusedTagDestroyViewTests(TestCase):
             status.HTTP_404_NOT_FOUND,
         ]:
             self.assertIn('error', response.data)
+
+class TagUpdateDestroyViewTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(email='admin@example.com', password='password123')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.tag = Tag.objects.create(name='Test Tag')
+        self.update_destroy_url = reverse('tag-update-destroy', kwargs={'pk': self.tag.pk})
+        self.payload = {
+            'name': 'Updated Tag'
+        }
+
+    def test_tag_update(self):
+        """Test updating a tag."""
+        response = self.client.put(self.update_destroy_url, self.payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.tag.refresh_from_db()
+        self.assertEqual(self.tag.name, 'Updated Tag')
+
+    def test_tag_destroy(self):
+        """Test destroying a tag."""
+        response = self.client.delete(self.update_destroy_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Tag.objects.filter(pk=self.tag.pk).exists())

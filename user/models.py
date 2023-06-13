@@ -22,7 +22,7 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password):
         """Create, save, and return a new superuser."""
         user = self.create_user(email=email, password=password)
-        user.is_admin = True
+        user.is_staff = True
         user.save(using=self._db)
         
         return user
@@ -34,9 +34,8 @@ class User(AbstractBaseUser):
     email = models.EmailField(unique=True)
     profile_picture = models.URLField(blank=True)
     bio = models.CharField(max_length=255, blank=True)
-    is_admin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
     followers = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='following')
-    
     objects = UserManager()
     
     USERNAME_FIELD = 'email'
