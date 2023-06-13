@@ -32,7 +32,6 @@ class User(AbstractBaseUser):
     bio = models.CharField(max_length=255, blank=True)
     is_admin = models.BooleanField(default=False)
     followers = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='following')
-    # tags = models.ManyToManyField('Tag', blank=True, related_name='user_tags')
     
     objects = UserManager()
     
@@ -55,3 +54,8 @@ class Post(models.Model):
     
     def __str__(self):
         return self.text
+
+class Tag(models.Model):
+    """Tag model for the social media app."""
+    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name='tags')
+    

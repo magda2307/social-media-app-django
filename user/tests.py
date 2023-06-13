@@ -136,3 +136,32 @@ class UserCRUDPostTest(TestCase):
         self.assertEqual(Post.objects.count(), 1)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(self.user.posts.count(), 1)
+        
+class UserProfileEditTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email='test@example.com', password='password123')
+        self.edit_url = reverse('user-profile-edit')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.payload = {
+            'bio': 'New bio'
+        }
+        self.posts_url = reverse('posts-list')
+        
+    def test_user_profile_edit_bio(self):
+        """Test user profile edit API endpoint for updating the bio field."""
+        response = self.client.patch(self.edit_url, self.payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.bio, 'New bio')
+    def test_user_profile_with_posts_edit_bio(self):
+        """Test user profile edit API endpoint for updating the bio field."""
+        self.client.post(self.posts_url, {'text':'post1'})
+        self.client.post(self.posts_url, {'text':'post2'})
+        response = self.client.patch(self.edit_url, self.payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.bio, 'New bio')
+        # Assert the user's posts
+        posts = self.user.posts.order_by('id')
+        self.assertEqual(posts.count(), 2)
+        self.assertEqual(posts[0].text, 'post1')
+        self.assertEqual(posts[1].text, 'post2')

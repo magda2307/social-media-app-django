@@ -128,8 +128,6 @@ class UserCreateRetrieveUpdatePost(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-
     def get_permissions(self):  
         """
         Instantiates and returns the list of permissions that this view requires.
