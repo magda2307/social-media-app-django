@@ -151,7 +151,7 @@ class UserTagListView(ListAPIView):
     """API view for retrieving a list of user's own tags."""
     serializer_class = TagSerializer
     authentication_classes = [authentication.TokenAuthentication]
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -183,3 +183,5 @@ class UnusedTagDestroyView(APIView):
             return Response(status=204)
         except Tag.DoesNotExist:
             return Response({'error': 'Tag not found.'}, status=404)
+
+

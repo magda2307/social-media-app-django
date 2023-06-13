@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from .models import Post, Tag
 from django.contrib.auth import get_user_model
+from .serializers import TagSerializer
 
 User = get_user_model()
 
@@ -277,3 +278,55 @@ class TagUpdateDestroyViewTestCase(TestCase):
         response = self.client.delete(self.update_destroy_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Tag.objects.filter(pk=self.tag.pk).exists())
+        
+        
+class TagListCreateViewTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(email='user@example.com', password='password123')
+        self.client.force_authenticate(self.user)
+        self.tag_data = {
+            'name': 'Test Tag',
+            'user': self.user.id
+        }
+        self.url = reverse('tags')
+
+    def test_create_tag(self):
+        """Test creating a new tag."""
+        response = self.client.post(self.url, self.tag_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        tag = Tag.objects.get(pk=response.data['id'])
+        self.assertEqual(tag.name, self.tag_data['name'])
+        self.assertEqual(tag.user, self.user)
+
+    def test_list_tags(self):
+        """Test retrieving a list of tags."""
+        tag1 = Tag.objects.create(name='Tag 1', user=self.user)
+        tag2 = Tag.objects.create(name='Tag 2', user=self.user)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertIn(TagSerializer(tag1).data, response.data)
+        self.assertIn(TagSerializer(tag2).data, response.data)
+
+
+class UserTagListViewTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(email='user@example.com', password='password123')
+        self.admin = User.objects.create_superuser(email='admin@example.com', password='password123')
+        self.client.force_authenticate(self.user)
+        self.tag1 = Tag.objects.create(name='Tag 1', user=self.user)
+        self.tag2 = Tag.objects.create(name='Tag 2', user=self.user)
+        self.tag3 = Tag.objects.create(name='Tag 3', user=self.admin)
+        self.url = reverse('tags-user')
+
+    def test_list_user_tags(self):
+        """Test retrieving a list of user's own tags."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertIn(TagSerializer(self.tag1).data, response.data)
+        self.assertIn(TagSerializer(self.tag2).data, response.data)
+        self.assertNotIn(TagSerializer(self.tag3).data, response.data)
