@@ -10,6 +10,10 @@ from .views import (
     UserFollowingListView,
     UserFollowersListView,
     UserCreateRetrieveUpdatePostView,
+    UserTagListCreateView,
+    UserTagListView,
+    TagUpdateDestroyView,
+    UnusedTagDestroyView,
 )
 
 router = routers.DefaultRouter()
@@ -26,4 +30,8 @@ urlpatterns = [
     path('profile/<int:id>/following/', UserFollowingListView.as_view(), name='user-profile-following'),
     path('profile/<int:id>/followers/', UserFollowersListView.as_view(), name='user-profile-followers'),
     path('', include(router.urls)),
+    path('tags/',UserTagListCreateView.as_view(), name='tags'),
+    path('tags/user/', UserTagListView.as_view(), name='tags-user'),
+    path('tags/<int:pk>/', TagUpdateDestroyView.as_view(), name='tag-update-destroy'),
+    path('tags/<int:tag_id>/delete/', UnusedTagDestroyView.as_view(), name='unused-tag-destroy'),
 ]

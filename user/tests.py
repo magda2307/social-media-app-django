@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from .models import User, Post
+from .models import User, Post, Tag
 
 
 class UserRegistrationLoginTestCase(TestCase):
@@ -165,3 +165,43 @@ class UserProfileEditTestCase(TestCase):
         self.assertEqual(posts.count(), 2)
         self.assertEqual(posts[0].text, 'post1')
         self.assertEqual(posts[1].text, 'post2')
+        
+        
+        
+class TagTests(TestCase):
+    """Tests for tags."""
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(email='mail@example.com', password='password123')
+        self.client.force_authenticate(self.user)
+        self.admin = User.objects.create_superuser(email='admin@example.com', password='password123')
+        self.post = Post.objects.create(user=self.user, text='Test post')
+        self.tag1 = Tag.objects.create(user=self.user, name='Existing Tag 1')
+        self.tag2 = Tag.objects.create(user=self.user, name='Existing Tag 2')
+        self.url_post = reverse('posts-list')
+    def test_create_tags_during_post_creation(self):
+        """Test creating tags during post creation."""
+        payload = {'text': 'Test', 'tags': [{'name': 'tag1'}, {'name': 'tag2'}]}
+        res = self.client.post(self.url_post, payload, format='json')
+        post_id = res.data['id']
+        post = Post.objects.get(id=post_id)
+        tags = post.tags.all()
+        tag_names = set(tag.name for tag in tags)
+        
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertIn('tag1', tag_names)
+        self.assertIn('tag2', tag_names)
+    def test_create_post_with_existing_tags(self):
+        """Test creating post with existing tags."""
+        payload = {'text': 'Test post creating with existing tags', 'tags': [{'name': 'Existing Tag 1'},
+                        {'name': 'Existing Tag 2'}]}
+        res = self.client.post(self.url_post, payload, format='json')
+        print(res.data)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        post_id = res.data['id']
+        post = Post.objects.get(id=post_id)
+        tags = post.tags.all()
+        tag_names = set(tag.name for tag in tags)
+        self.assertIn('Existing Tag 1', tag_names)
+        self.assertIn('Existing Tag 2', tag_names)        
+        

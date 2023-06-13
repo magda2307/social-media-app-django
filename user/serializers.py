@@ -6,25 +6,37 @@ from django.utils.translation import gettext as _
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ['id', 'user', 'name', 'date_created']
-
+        fields = ['id', 'user', 'name']
+        read_only_fields = ['id']
 
 class PostSerializer(serializers.ModelSerializer):
     """Serializer for the Post object."""
+    tags = TagSerializer(many=True, required=False)
     class Meta:
         model = Post
-        fields = ['id', 'text', 'image', 'date_created', 'user']
+        fields = ['id', 'text', 'image', 'date_created', 'user', 'tags']
         read_only_fields = ['id', 'date_created', 'user']
-
+    def validate_tags(self, tags):
+        return tags
+        
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user
-        return super().create(validated_data)
+        tags = validated_data.pop('tags', [])
+        post = Post.objects.create(**validated_data)
+        for tag_data in tags:
+            tag_name = tag_data.get('name')
+            try:
+                tag = Tag.objects.get(name=tag_name, user=user)
+            except Tag.DoesNotExist:
+                tag = Tag.objects.create(name=tag_name, user=user)
+            post.tags.add(tag)
+        return post
 
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User object."""
-    posts = PostSerializer(many=True, required=False, read_only=True)
+    posts = PostSerializer(many=True, required=False,read_only=True)
 
     class Meta:
         model = User

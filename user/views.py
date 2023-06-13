@@ -128,16 +128,7 @@ class UserCreateRetrieveUpdatePostView(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
-    def get_permissions(self):  
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action == 'list':
-            permission_classes = [permissions.IsAdminUser]
-        else:
-            permission_classes = [permissions.IsAuthenticated]
-        return [permission() for permission in permission_classes]
-    
+    permission_classes = [permissions.IsAuthenticated]
 
 class UserTagListCreateView(ListCreateAPIView):
     """API view for creating and retrieving Tags."""
@@ -149,6 +140,9 @@ class UserTagListCreateView(ListCreateAPIView):
 class UserTagListView(ListAPIView):
     """API view for retrieving a list of user's own tags."""
     serializer_class = TagSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+
     def get_queryset(self):
         user = self.request.user
         return Tag.objects.filter(user=user)
