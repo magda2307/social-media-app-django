@@ -2,8 +2,10 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from .models import User, Post, Tag
+from .models import Post, Tag
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 class UserRegistrationLoginTestCase(TestCase):
     def setUp(self):
@@ -67,7 +69,7 @@ class UserProfileTestCase(TestCase):
         self.assertNotEqual(self.user.password, 'newpassword123')
 
 
-class UserFollowUnfollowViewTest(TestCase):
+class UserFollowViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email='user@example.com', password='testpassword')
         self.client = APIClient()
@@ -117,7 +119,6 @@ class UserFollowUnfollowViewTest(TestCase):
         res_unfollow = self.client.delete(self.unfollow_url, payload)
         self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_400_BAD_REQUEST)
 
-
 class UserCRUDPostTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email='user@example.com', password='testpassword')
@@ -166,10 +167,9 @@ class UserProfileEditTestCase(TestCase):
         self.assertEqual(posts[0].text, 'post1')
         self.assertEqual(posts[1].text, 'post2')
         
-        
-        
-class TagTests(TestCase):
-    """Tests for tags."""
+class PostCreationWithExistingOrNewTagsTest(TestCase):
+    """Tests for creating post with existing tags or with tags
+    created during post creation.."""
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(email='mail@example.com', password='password123')
@@ -205,4 +205,51 @@ class TagTests(TestCase):
         self.assertIn('Existing Tag 1', tag_names)
         self.assertIn('Existing Tag 2', tag_names)
         self.assertEqual(Tag.objects.all().count(),2)
-    
+
+
+class UnusedTagDestroyViewTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(email='user@example.com', password='password123')
+        self.client.force_authenticate(self.user)
+        self.tag1 = Tag.objects.create(user=self.user, name='Tag 1')
+        self.tag2 = Tag.objects.create(user=self.user, name='Tag 2')
+        self.tag3 = Tag.objects.create(user=self.user, name='Tag 3')
+        self.url = reverse('unused-tag-destroy', kwargs={'tag_id': self.tag1.id})
+
+    def test_delete_unused_own_tag(self):
+        """Test deleting unused own tag."""
+        response = self.client.delete(self.url)
+        self.assertDeleteResponse(response, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Tag.objects.filter(id=self.tag1.id).exists())
+
+    def test_delete_used_tag(self):
+        """Test deleting used own tag that should be a bad request."""
+        post = Post.objects.create(user=self.user, text='Test post')
+        post.tags.add(self.tag2)
+        response = self.client.delete(reverse('unused-tag-destroy', kwargs={'tag_id': self.tag2.id}))
+        self.assertDeleteResponse(response, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Tag.objects.filter(id=self.tag2.id).exists())
+
+    def test_delete_other_users_tag(self):
+        """Test deleting other user tag which should be a bad request."""
+        other_user = User.objects.create_user(email='other@example.com', password='password456')
+        tag = Tag.objects.create(user=other_user, name='Other User Tag')
+        response = self.client.delete(reverse('unused-tag-destroy', kwargs={'tag_id': tag.id}))
+        self.assertDeleteResponse(response, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Tag.objects.filter(id=tag.id).exists())
+
+    def test_delete_nonexistent_tag(self):
+        """Test deleting nonexistent which should be not found."""
+        response = self.client.delete(reverse('unused-tag-destroy', kwargs={'tag_id': 999}))
+        self.assertDeleteResponse(response, status.HTTP_404_NOT_FOUND)
+
+    def assertDeleteResponse(self, response, expected_status):
+        self.assertEqual(response.status_code, expected_status)
+        if expected_status == status.HTTP_204_NO_CONTENT:
+            self.assertFalse(response.data)
+        elif expected_status in [
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_404_NOT_FOUND,
+        ]:
+            self.assertIn('error', response.data)

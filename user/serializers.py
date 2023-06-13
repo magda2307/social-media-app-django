@@ -8,8 +8,19 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ['id', 'user', 'name']
         read_only_fields = ['id']
+        
+    def create(self, validated_data):
+        tag_name = validated_data.get('name')
+        user = self.context['request'].user
 
+        # Check if a tag with the same name exists
+        tag = Tag.objects.filter(name=tag_name).first()
 
+        # If tag doesn't exist, create a new one
+        if not tag:
+            tag = Tag.objects.create(name=tag_name, user=user)
+
+        return tag
 class PostSerializer(serializers.ModelSerializer):
     """Serializer for the Post object."""
     tags = TagSerializer(many=True, required=False)
