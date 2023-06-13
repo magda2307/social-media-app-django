@@ -177,8 +177,9 @@ class TagTests(TestCase):
         self.admin = User.objects.create_superuser(email='admin@example.com', password='password123')
         self.post = Post.objects.create(user=self.user, text='Test post')
         self.tag1 = Tag.objects.create(user=self.user, name='Existing Tag 1')
-        self.tag2 = Tag.objects.create(user=self.user, name='Existing Tag 2')
+        self.tag2 = Tag.objects.create(user=self.admin, name='Existing Tag 2')
         self.url_post = reverse('posts-list')
+        
     def test_create_tags_during_post_creation(self):
         """Test creating tags during post creation."""
         payload = {'text': 'Test', 'tags': [{'name': 'tag1'}, {'name': 'tag2'}]}
@@ -196,12 +197,12 @@ class TagTests(TestCase):
         payload = {'text': 'Test post creating with existing tags', 'tags': [{'name': 'Existing Tag 1'},
                         {'name': 'Existing Tag 2'}]}
         res = self.client.post(self.url_post, payload, format='json')
-        print(res.data)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         post_id = res.data['id']
         post = Post.objects.get(id=post_id)
         tags = post.tags.all()
         tag_names = set(tag.name for tag in tags)
         self.assertIn('Existing Tag 1', tag_names)
-        self.assertIn('Existing Tag 2', tag_names)        
+        self.assertIn('Existing Tag 2', tag_names)
+        self.assertEqual(Tag.objects.all().count(),2)
         

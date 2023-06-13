@@ -9,6 +9,7 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'name']
         read_only_fields = ['id']
 
+
 class PostSerializer(serializers.ModelSerializer):
     """Serializer for the Post object."""
     tags = TagSerializer(many=True, required=False)
@@ -23,16 +24,15 @@ class PostSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['user'] = user
         tags = validated_data.pop('tags', [])
-        post = Post.objects.create(**validated_data)
-        for tag_data in tags:
-            tag_name = tag_data.get('name')
-            try:
-                tag = Tag.objects.get(name=tag_name, user=user)
-            except Tag.DoesNotExist:
+        post = super().create(validated_data)
+        for tag in tags:
+            tag_name = tag.get('name')
+            if Tag.objects.filter(name=tag_name).first() is None:
                 tag = Tag.objects.create(name=tag_name, user=user)
+            else:
+                tag = Tag.objects.get(name=tag_name)
             post.tags.add(tag)
         return post
-
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User object."""
