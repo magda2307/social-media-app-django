@@ -1,6 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
+#Constants at the module level, may be moved to constants.py in future
+MAX_TAG_LENGTH = 50
+
+
 class UserManager(BaseUserManager):
     """Manager for users in the system."""
     
@@ -48,8 +52,7 @@ class Post(models.Model):
     text = models.CharField(max_length=255, blank=False)
     image = models.URLField(blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
-    
-    # tags = models.ManyToManyField('Tag', blank=True, related_name='post_tags')
+    tags = models.ManyToManyField('Tag', blank=True, related_name='tags')
     # likes = models.ManyToManyField(User, blank=True, related_name='liked_posts')
     
     def __str__(self):
@@ -58,4 +61,8 @@ class Post(models.Model):
 class Tag(models.Model):
     """Tag model for the social media app."""
     user = models.ForeignKey(User,on_delete=models.CASCADE, related_name='tags')
+    name = models.CharField(max_length=50, blank=False)
+    date_created = models.DateTimeField(auto_now_add=True)
     
+    def __str__(self):
+        return self.name
