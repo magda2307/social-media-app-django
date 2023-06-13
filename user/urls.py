@@ -9,11 +9,11 @@ from .views import (
     UserFollowUnfollowView,
     UserFollowingListView,
     UserFollowersListView,
-    UserCreateRetrieveUpdatePost,
+    UserCreateRetrieveUpdatePostView,
 )
 
 router = routers.DefaultRouter()
-router.register(r'posts', UserCreateRetrieveUpdatePost, basename='posts')
+router.register(r'posts', UserCreateRetrieveUpdatePostView, basename='posts')
 
 urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='user-registration'),

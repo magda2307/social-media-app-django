@@ -1,7 +1,12 @@
 from rest_framework import serializers
-from .models import User, Post
+from .models import User, Post, Tag
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext as _
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'user', 'name', 'date_created']
 
 
 class PostSerializer(serializers.ModelSerializer):

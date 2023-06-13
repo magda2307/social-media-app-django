@@ -52,15 +52,17 @@ class Post(models.Model):
     text = models.CharField(max_length=255, blank=False)
     image = models.URLField(blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
-    tags = models.ManyToManyField('Tag', blank=True, related_name='tags')
+    tags = models.ManyToManyField('Tag', blank=True, related_name='posts')
     # likes = models.ManyToManyField(User, blank=True, related_name='liked_posts')
     
     def __str__(self):
         return self.text
 
 class Tag(models.Model):
-    """Tag model for the social media app."""
-    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name='tags')
+    """Tag model for the social media app. 
+    Despite deleting user account tags will remain."""
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                            related_name='tags')    
     name = models.CharField(max_length=50, blank=False)
     date_created = models.DateTimeField(auto_now_add=True)
     
