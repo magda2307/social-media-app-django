@@ -58,8 +58,9 @@ class UserSerializer(serializers.ModelSerializer):
                 'write_only': True,
                 'min_length': 5
             }
-        }
-
+        }    
+        
+    
     def create(self, validated_data):
         """Create and return a user with an encrypted password."""
         return get_user_model().objects.create_user(**validated_data)
@@ -72,6 +73,16 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
             user.save()
         return user
+
+
+class UserUpdateSerializer(UserSerializer):
+    """Serializer for updating the User profile."""
+
+    class Meta(UserSerializer.Meta):
+        extra_kwargs = {
+            'password': {'write_only': False, 'required': False}
+        }
+        fields = ['email', 'profile_picture', 'bio']
 
 
 class AuthTokenSerializer(serializers.Serializer):

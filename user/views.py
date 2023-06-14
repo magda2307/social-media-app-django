@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer, LikeSerializer
+from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer, LikeSerializer, UserUpdateSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework import authentication, permissions, status
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -53,7 +53,7 @@ class UserProfileView(RetrieveAPIView):
 
 class UserProfileEditView(UpdateAPIView):
     """API view for editing user profile."""
-    serializer_class = UserSerializer
+    serializer_class = UserUpdateSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
