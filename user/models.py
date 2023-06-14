@@ -51,7 +51,7 @@ class Post(models.Model):
     image = models.URLField(blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField('Tag', blank=True, related_name='posts')
-    # likes = models.ManyToManyField(User, blank=True, related_name='liked_posts')
+    likes = models.ManyToManyField(User, blank=True, related_name='liked_posts')
 
     def __str__(self):
         return self.text

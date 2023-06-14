@@ -105,3 +105,7 @@ class AuthTokenSerializer(serializers.Serializer):
 class FollowSerializer(serializers.Serializer):
     """Serializer for the following/unfollowing actions."""
     user_id = serializers.IntegerField()
+    
+class LikeSerializer(serializers.Serializer):
+    """Serializer for the liking post action."""
+    post_id = serializers.IntegerField()
