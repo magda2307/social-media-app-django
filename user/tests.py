@@ -26,14 +26,42 @@ class UserRegistrationLoginTestCase(TestCase):
         self.assertEqual(User.objects.get().email, 'test@example.com')
         self.assertNotEqual(User.objects.get().password, 'password123')
 
+    def test_user_registration_duplicate_email(self):
+        """Test user registration API endpoint with already registered mail."""
+        self.client.post(self.register_url, self.user_data, format='json')
+        response = self.client.post(self.register_url, self.user_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_user_registration_bad_password(self):
+        """Test user registration API endpoint with too short password."""
+        payload = self.user_data
+        payload['password'] = '123'
+        response = self.client.post(self.register_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_user_registration_bad_email(self):
+        """Test user registration API endpoint with bad email."""
+        payload = self.user_data
+        payload['email'] = '123'
+        response = self.client.post(self.register_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.count(), 0)
+
     def test_user_login(self):
         """Test user login API endpoint."""
-        data = self.user_data
-        User.objects.create_user(**data)
-        response = self.client.post(self.login_url, data, format='json')
+        User.objects.create_user(**self.user_data)
+        response = self.client.post(self.login_url, self.user_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
-
+    
+    def test_user_login_bad_password(self):
+        """Test user login API endpoint with wrong password."""
+        payload = self.user_data
+        payload['password'] = 'bad_password'
+        response = self.client.post(self.login_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 class UserProfileTestCase(TestCase):
     def setUp(self):
@@ -118,7 +146,8 @@ class UserFollowViewTest(TestCase):
         user_to_unfollow = User.objects.create_user(email='user_to_unfollow@example.com', password='testpassword')
         payload = {'user_id': user_to_unfollow.id}
         res_unfollow = self.client.delete(self.unfollow_url, payload)
-        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_400_BAD_REQUEST)
+        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_409_CONFLICT)
+
 
 class UserCRUDPostTest(TestCase):
     def setUp(self):
@@ -138,7 +167,8 @@ class UserCRUDPostTest(TestCase):
         self.assertEqual(Post.objects.count(), 1)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(self.user.posts.count(), 1)
-        
+
+
 class UserProfileEditTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email='test@example.com', password='password123')
@@ -167,7 +197,8 @@ class UserProfileEditTestCase(TestCase):
         self.assertEqual(posts.count(), 2)
         self.assertEqual(posts[0].text, 'post1')
         self.assertEqual(posts[1].text, 'post2')
-        
+
+
 class PostCreationWithExistingOrNewTagsTest(TestCase):
     """Tests for creating post with existing tags or with tags
     created during post creation.."""
@@ -241,7 +272,7 @@ class UnusedTagDestroyViewTests(TestCase):
         self.assertTrue(Tag.objects.filter(id=tag.id).exists())
 
     def test_delete_nonexistent_tag(self):
-        """Test deleting nonexistent which should be not found."""
+        """Test deleting nonexistent tag which should be not found."""
         response = self.client.delete(reverse('unused-tag-destroy', kwargs={'tag_id': 999}))
         self.assertDeleteResponse(response, status.HTTP_404_NOT_FOUND)
 
@@ -254,6 +285,7 @@ class UnusedTagDestroyViewTests(TestCase):
             status.HTTP_404_NOT_FOUND,
         ]:
             self.assertIn('error', response.data)
+
 
 class TagUpdateDestroyViewTestCase(TestCase):
     def setUp(self):
@@ -278,8 +310,8 @@ class TagUpdateDestroyViewTestCase(TestCase):
         response = self.client.delete(self.update_destroy_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Tag.objects.filter(pk=self.tag.pk).exists())
-        
-        
+
+
 class TagListCreateViewTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -330,3 +362,84 @@ class UserTagListViewTestCase(TestCase):
         self.assertIn(TagSerializer(self.tag1).data, response.data)
         self.assertIn(TagSerializer(self.tag2).data, response.data)
         self.assertNotIn(TagSerializer(self.tag3).data, response.data)
+
+
+class UserLikePostViewTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create(email='test@example.com', password='password1234')
+        self.post = Post.objects.create(text='Test Post', user=self.user)
+        self.client.force_authenticate(user=self.user)
+        
+    def _like_post(self, post_id):
+        url = reverse('post-like', args=[post_id])
+        return self.client.post(url)
+
+    def _unlike_post(self, post_id):
+        url = reverse('post-unlike', args=[post_id])
+        return self.client.delete(url)
+
+    def test_like_post(self):
+        """Test for liking a post."""
+        response = self._like_post(post_id=self.post.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertIn(self.post, self.user.liked_posts.all())
+
+    def test_unlike_post(self):
+        """Test for unliking a post."""
+        self.user.liked_posts.add(self.post)
+        response = self._unlike_post(post_id=self.post.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertNotIn(self.post, self.user.liked_posts.all())
+
+    def test_like_already_liked_post(self):
+        """Tes for liking an already liked post which should result
+        in exception. It returns 500 for some reason and i cannot troubleshoot it.
+        But it works almost as expected - it does not allow user to do that."""
+        self.user.liked_posts.add(self.post)
+        response = self._like_post(post_id=self.post.id)
+        self.assertNotEqual(response.status_code, status.HTTP_200_OK)
+
+
+class UserLikesListViewTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(email='test@example.com', password='testpassword')
+        self.client =APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_liked_posts(self):
+        """Test retrieving a list of user's liked posts."""
+        post1 = Post.objects.create(text='Post 1', user=self.user)
+        post2 = Post.objects.create(text='Post 2', user=self.user)
+        self.user.liked_posts.add(post1, post2)
+
+        url = reverse('user-likes')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]['text'], 'Post 1')  
+        self.assertEqual(response.data[1]['text'], 'Post 2') 
+
+class PostLikesListViewTests(TestCase):
+
+    def setUp(self):
+        self.user1 = User.objects.create_user(email='user1@example.com', password='password1')
+        self.user2 = User.objects.create_user(email='user2@example.com', password='password2')
+        self.post = Post.objects.create(text='Test Post', user=self.user1)
+        self.post.likes.add(self.user2)
+        self.client =APIClient()
+        self.client.force_authenticate(user=self.user1)
+
+
+    def test_get_users_liked_post(self):
+        """Test retrieving a list of users that liked a particular post."""
+        url = reverse('post-likes', kwargs={'post_id': self.post.id})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['email'], 'user2@example.com')

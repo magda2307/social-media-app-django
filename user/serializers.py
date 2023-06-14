@@ -26,11 +26,9 @@ class PostSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     class Meta:
         model = Post
-        fields = ['id', 'text', 'image', 'date_created', 'user', 'tags']
-        read_only_fields = ['id', 'date_created', 'user']
-    def validate_tags(self, tags):
-        return tags
-        
+        fields = ['id', 'text', 'image', 'date_created', 'user', 'tags', 'likes']
+        read_only_fields = ['id', 'date_created', 'user', 'likes']
+
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user
@@ -105,3 +103,10 @@ class AuthTokenSerializer(serializers.Serializer):
 class FollowSerializer(serializers.Serializer):
     """Serializer for the following/unfollowing actions."""
     user_id = serializers.IntegerField()
+    
+
+class LikeSerializer(serializers.ModelSerializer):
+    """Serializer for the liking post action."""
+    class Meta:
+        model = Post
+        fields = ['id', 'text']

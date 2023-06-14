@@ -14,6 +14,9 @@ from .views import (
     UserTagListView,
     TagUpdateDestroyView,
     UnusedTagDestroyView,
+    PostLikesListView,
+    UserLikesListView,
+    UserLikePostView,
 )
 
 router = routers.DefaultRouter()
@@ -34,4 +37,8 @@ urlpatterns = [
     path('tags/user/', UserTagListView.as_view(), name='tags-user'),
     path('tags/<int:pk>/', TagUpdateDestroyView.as_view(), name='tag-update-destroy'),
     path('tags/<int:tag_id>/delete/', UnusedTagDestroyView.as_view(), name='unused-tag-destroy'),
+    path('posts/<int:post_id>/likes/', PostLikesListView.as_view(), name='post-likes'),
+    path('likes/', UserLikesListView.as_view(), name='user-likes'),
+    path('posts/<int:post_id>/like/', UserLikePostView.as_view(), name='post-like'),
+    path('posts/<int:post_id>/unlike/', UserLikePostView.as_view(), name='post-unlike'),
 ]
