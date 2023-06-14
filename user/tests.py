@@ -419,7 +419,6 @@ class UserLikesListViewTests(TestCase):
 
         url = reverse('user-likes')
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]['text'], 'Post 1')  

@@ -190,14 +190,17 @@ class UserLikePostView(APIView):
         if post_to_like.likes.filter(id=request.user.id).exists():
             raise APIException(_('Post was already liked.'), status.HTTP_409_CONFLICT)
         request.user.liked_posts.add(post_to_like)
+        
 
     def unlike_post(self, request, post_id):
         post_to_unlike = get_object_or_404(Post, id=post_id)
         request.user.liked_posts.remove(post_to_unlike)
+        
 
     def post(self, request, post_id):
         """Like a post."""
-        serializer = self.serializer_class(data={"post_id": post_id})
+        text = Post.objects.get(id=post_id).text
+        serializer = self.serializer_class(data={"id": post_id, 'text':text})
         serializer.is_valid(raise_exception=True)
         try:
             self.like_post(request, post_id)
@@ -207,7 +210,8 @@ class UserLikePostView(APIView):
 
     def delete(self, request, post_id):
         """Unlike a post."""
-        serializer = self.serializer_class(data={"post_id": post_id})
+        text = Post.objects.get(id=post_id).text
+        serializer = self.serializer_class(data={"id": post_id, 'text':text})
         serializer.is_valid(raise_exception=True)
 
         try:
