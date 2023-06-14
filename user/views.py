@@ -74,7 +74,10 @@ class UserFollowView(APIView):
             user_id = serializer.validated_data['user_id']
             user_to_follow = get_object_or_404(User, id=user_id)
             request.user.following.add(user_to_follow)
-            return Response(status=status.HTTP_200_OK)
+            return Response(
+                {"message": f"You are now following {user_to_follow.email}."},
+                status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
@@ -85,9 +88,15 @@ class UserFollowView(APIView):
             user_to_unfollow = get_object_or_404(User, id=user_id)
             if user_to_unfollow in request.user.following.all():
                 request.user.following.remove(user_to_unfollow)
-                return Response(status=status.HTTP_200_OK)
+                return Response(
+                    {"message": f"You have unfollowed {user_to_unfollow.email}."},
+                    status=status.HTTP_204_NO_CONTENT
+                )
             else:
-                return Response({'error': _('User is not being followed.')}, status=status.HTTP_409_CONFLICT)
+                return Response(
+                    {'error': f"You are not following {user_to_unfollow.email}."},
+                    status=status.HTTP_409_CONFLICT
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserFollowersListView(ListAPIView):

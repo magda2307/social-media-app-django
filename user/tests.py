@@ -126,7 +126,7 @@ class UserFollowViewTest(TestCase):
         """Test unfollowing another user."""
         res_follow = self._follow_user()
         res_unfollow = self.client.delete(self.unfollow_url, self.payload)
-        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_200_OK)
+        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_204_NO_CONTENT)
 
     def test_follow_nonexistent_user(self):
         """Test following a non-existent user."""
