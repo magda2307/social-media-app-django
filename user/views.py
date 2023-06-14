@@ -178,3 +178,31 @@ class UnusedTagDestroyView(APIView):
             return Response({'error': 'Tag not found.'}, status=404)
 
 
+class UserLikePostView(APIView):
+    """API view for liking/unliking posts. """
+    serializer_class = FollowSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """Like a post."""
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            post_id = serializer.validated_data['post_id']
+            post_to_like = get_object_or_404(User, id=post_id)
+            request.user.liked_posts.add(post_to_like)
+            return Response(status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        """Unlike liked post."""
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            post_id = serializer.validated_data['post_id']
+            post_to_unlike = get_object_or_404(User, id=post_id)
+            if post_to_unlike in request.user.liked_posts.all():
+                request.user.liked_posts.remove(post_to_unlike)
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response({'error': _('Post was not liked.')}, status=status.HTTP_409_CONFLICT)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
