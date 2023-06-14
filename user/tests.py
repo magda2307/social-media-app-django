@@ -110,7 +110,7 @@ class UserFollowViewTest(TestCase):
         self.non_existent_user_id = 9999  # ID of a non-existent user
 
     def _follow_user(self):
-        return self.client.post(self.follow_url, self.payload)
+        return self.client.put(self.follow_url, self.payload)
 
     def _assertions_state_follow_count(self, res, count, status=status.HTTP_200_OK):
         self.assertEqual(res.status_code, status)

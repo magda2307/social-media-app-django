@@ -67,7 +67,7 @@ class UserFollowView(APIView):
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
+    def put(self, request):
         """Follow a user."""
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
