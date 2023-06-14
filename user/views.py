@@ -8,7 +8,7 @@ from .models import User, Post, Tag
 from rest_framework.settings import api_settings
 from django.utils.translation import gettext as _
 from rest_framework import viewsets
-
+from django.shortcuts import get_object_or_404
 
 class ObtainAuthTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
@@ -71,12 +71,9 @@ class UserFollowView(APIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             user_id = serializer.validated_data['user_id']
-            try:
-                user_to_follow = User.objects.get(id=user_id)
-                request.user.following.add(user_to_follow)
-                return Response(status=status.HTTP_200_OK)
-            except User.DoesNotExist:
-                return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
+            user_to_follow = get_object_or_404(User, id=user_id)
+            request.user.following.add(user_to_follow)
+            return Response(status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
@@ -84,17 +81,13 @@ class UserFollowView(APIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             user_id = serializer.validated_data['user_id']
-            try:
-                user_to_unfollow = User.objects.get(id=user_id)
-                if user_to_unfollow in request.user.following.all():
-                    request.user.following.remove(user_to_unfollow)
-                    return Response(status=status.HTTP_200_OK)
-                else:
-                    return Response({'error': _('User is not being followed.')}, status=status.HTTP_400_BAD_REQUEST)
-            except User.DoesNotExist:
-                return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
+            user_to_unfollow = get_object_or_404(User, id=user_id)
+            if user_to_unfollow in request.user.following.all():
+                request.user.following.remove(user_to_unfollow)
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response({'error': _('User is not being followed.')}, status=status.HTTP_409_CONFLICT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class UserFollowersListView(ListAPIView):
     """API view for listing followers for specified user."""

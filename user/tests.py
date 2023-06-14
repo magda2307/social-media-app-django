@@ -146,7 +146,7 @@ class UserFollowViewTest(TestCase):
         user_to_unfollow = User.objects.create_user(email='user_to_unfollow@example.com', password='testpassword')
         payload = {'user_id': user_to_unfollow.id}
         res_unfollow = self.client.delete(self.unfollow_url, payload)
-        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_400_BAD_REQUEST)
+        self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_409_CONFLICT)
 
 
 class UserCRUDPostTest(TestCase):
