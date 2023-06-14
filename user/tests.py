@@ -374,13 +374,11 @@ class UserLikePostViewTests(TestCase):
         
     def _like_post(self, post_id):
         url = reverse('post-like', args=[post_id])
-        response = self.client.post(url)
-        return response
+        return self.client.post(url)
 
     def _unlike_post(self, post_id):
         url = reverse('post-unlike', args=[post_id])
-        response = self.client.delete(url)
-        return response
+        return self.client.delete(url)
 
     def test_like_post(self):
         """Test for liking a post."""
@@ -404,3 +402,45 @@ class UserLikePostViewTests(TestCase):
         self.user.liked_posts.add(self.post)
         response = self._like_post(post_id=self.post.id)
         self.assertNotEqual(response.status_code, status.HTTP_200_OK)
+
+
+class UserLikesListViewTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(email='test@example.com', password='testpassword')
+        self.client =APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_liked_posts(self):
+        """Test retrieving a list of user's liked posts."""
+        post1 = Post.objects.create(text='Post 1', user=self.user)
+        post2 = Post.objects.create(text='Post 2', user=self.user)
+        self.user.liked_posts.add(post1, post2)
+
+        url = reverse('user-likes')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]['text'], 'Post 1')  
+        self.assertEqual(response.data[1]['text'], 'Post 2') 
+
+class PostLikesListViewTests(TestCase):
+
+    def setUp(self):
+        self.user1 = User.objects.create_user(email='user1@example.com', password='password1')
+        self.user2 = User.objects.create_user(email='user2@example.com', password='password2')
+        self.post = Post.objects.create(text='Test Post', user=self.user1)
+        self.post.likes.add(self.user2)
+        self.client =APIClient()
+        self.client.force_authenticate(user=self.user1)
+
+
+    def test_get_users_liked_post(self):
+        """Test retrieving a list of users that liked a particular post."""
+        url = reverse('post-likes', kwargs={'post_id': self.post.id})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['email'], 'user2@example.com')
