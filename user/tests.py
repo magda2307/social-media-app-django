@@ -26,6 +26,13 @@ class UserRegistrationLoginTestCase(TestCase):
         self.assertEqual(User.objects.get().email, 'test@example.com')
         self.assertNotEqual(User.objects.get().password, 'password123')
 
+    def test_user_registration_duplicate_email(self):
+        """Test user registration API endpoint with already registered mail."""
+        self.client.post(self.register_url, self.user_data, format='json')
+        response = self.client.post(self.register_url, self.user_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.count(), 1)
+
     def test_user_registration_bad_password(self):
         """Test user registration API endpoint with too short password."""
         payload = self.user_data
@@ -141,6 +148,7 @@ class UserFollowViewTest(TestCase):
         res_unfollow = self.client.delete(self.unfollow_url, payload)
         self._assertions_state_follow_count(res=res_unfollow, count=0, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserCRUDPostTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email='user@example.com', password='testpassword')
@@ -159,7 +167,8 @@ class UserCRUDPostTest(TestCase):
         self.assertEqual(Post.objects.count(), 1)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(self.user.posts.count(), 1)
-        
+
+
 class UserProfileEditTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email='test@example.com', password='password123')
@@ -188,7 +197,8 @@ class UserProfileEditTestCase(TestCase):
         self.assertEqual(posts.count(), 2)
         self.assertEqual(posts[0].text, 'post1')
         self.assertEqual(posts[1].text, 'post2')
-        
+
+
 class PostCreationWithExistingOrNewTagsTest(TestCase):
     """Tests for creating post with existing tags or with tags
     created during post creation.."""
@@ -276,6 +286,7 @@ class UnusedTagDestroyViewTests(TestCase):
         ]:
             self.assertIn('error', response.data)
 
+
 class TagUpdateDestroyViewTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create_superuser(email='admin@example.com', password='password123')
@@ -299,8 +310,8 @@ class TagUpdateDestroyViewTestCase(TestCase):
         response = self.client.delete(self.update_destroy_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Tag.objects.filter(pk=self.tag.pk).exists())
-        
-        
+
+
 class TagListCreateViewTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
