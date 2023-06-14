@@ -26,14 +26,35 @@ class UserRegistrationLoginTestCase(TestCase):
         self.assertEqual(User.objects.get().email, 'test@example.com')
         self.assertNotEqual(User.objects.get().password, 'password123')
 
+    def test_user_registration_bad_password(self):
+        """Test user registration API endpoint with too short password."""
+        payload = self.user_data
+        payload['password'] = '123'
+        response = self.client.post(self.register_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_user_registration_bad_email(self):
+        """Test user registration API endpoint with bad email."""
+        payload = self.user_data
+        payload['email'] = '123'
+        response = self.client.post(self.register_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.count(), 0)
+
     def test_user_login(self):
         """Test user login API endpoint."""
-        data = self.user_data
-        User.objects.create_user(**data)
-        response = self.client.post(self.login_url, data, format='json')
+        User.objects.create_user(**self.user_data)
+        response = self.client.post(self.login_url, self.user_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
-
+    
+    def test_user_login_bad_password(self):
+        """Test user login API endpoint with wrong password."""
+        payload = self.user_data
+        payload['password'] = 'bad_password'
+        response = self.client.post(self.login_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 class UserProfileTestCase(TestCase):
     def setUp(self):
