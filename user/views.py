@@ -202,8 +202,6 @@ class UserLikePostView(APIView):
         try:
             self.like_post(request, post_id)
         except APIException as e:
-            print(e)
-            traceback.print_exc()
             return Response({'error': str(e)}, status=e.status_code)
         return Response(status=status.HTTP_200_OK)
 
