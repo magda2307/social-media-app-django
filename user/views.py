@@ -180,43 +180,43 @@ class UnusedTagDestroyView(APIView):
 
 
 class UserLikePostView(APIView):
-    """API view for liking/unliking posts. """
+    """API view for liking/unliking posts."""
     serializer_class = LikeSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def like_post(self, request, post_id):
         post_to_like = get_object_or_404(Post, id=post_id)
+        if post_to_like.likes.filter(id=request.user.id).exists():
+            raise APIException(_('Post was already liked.'), status.HTTP_409_CONFLICT)
         request.user.liked_posts.add(post_to_like)
 
     def unlike_post(self, request, post_id):
         post_to_unlike = get_object_or_404(Post, id=post_id)
-        if post_to_unlike in request.user.liked_posts.all():
-            request.user.liked_posts.remove(post_to_unlike)
-        else:
-            raise APIException(_('Post was not liked.'), status.HTTP_409_CONFLICT)
+        request.user.liked_posts.remove(post_to_unlike)
 
-    def post(self, request):
+    def post(self, request, post_id):
         """Like a post."""
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            post_id = serializer.validated_data['post_id']
+        serializer = self.serializer_class(data={"post_id": post_id})
+        serializer.is_valid(raise_exception=True)
+        try:
             self.like_post(request, post_id)
-            return Response(status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except APIException as e:
+            print(e)
+            traceback.print_exc()
+            return Response({'error': str(e)}, status=e.status_code)
+        return Response(status=status.HTTP_200_OK)
 
-    def delete(self, request):
+    def delete(self, request, post_id):
         """Unlike a post."""
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            post_id = serializer.validated_data['post_id']
-            try:
-                self.unlike_post(request, post_id)
-                return Response(status=status.HTTP_200_OK)
-            except APIException as e:
-                return Response({'error': str(e)}, status=e.status_code)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        serializer = self.serializer_class(data={"post_id": post_id})
+        serializer.is_valid(raise_exception=True)
 
+        try:
+            self.unlike_post(request, post_id)
+            return Response(status=status.HTTP_200_OK)
+        except APIException as e:
+            return Response({'error': str(e)}, status=e.status_code)
 
 class UserLikesListView(ListAPIView):
     """API view for retrieving a list of user's liked posts."""

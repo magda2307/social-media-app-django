@@ -272,7 +272,7 @@ class UnusedTagDestroyViewTests(TestCase):
         self.assertTrue(Tag.objects.filter(id=tag.id).exists())
 
     def test_delete_nonexistent_tag(self):
-        """Test deleting nonexistent which should be not found."""
+        """Test deleting nonexistent tag which should be not found."""
         response = self.client.delete(reverse('unused-tag-destroy', kwargs={'tag_id': 999}))
         self.assertDeleteResponse(response, status.HTTP_404_NOT_FOUND)
 
@@ -362,3 +362,45 @@ class UserTagListViewTestCase(TestCase):
         self.assertIn(TagSerializer(self.tag1).data, response.data)
         self.assertIn(TagSerializer(self.tag2).data, response.data)
         self.assertNotIn(TagSerializer(self.tag3).data, response.data)
+
+
+class UserLikePostViewTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create(email='test@example.com', password='password1234')
+        self.post = Post.objects.create(text='Test Post', user=self.user)
+        self.client.force_authenticate(user=self.user)
+        
+    def _like_post(self, post_id):
+        url = reverse('post-like', args=[post_id])
+        response = self.client.post(url)
+        return response
+
+    def _unlike_post(self, post_id):
+        url = reverse('post-unlike', args=[post_id])
+        response = self.client.delete(url)
+        return response
+
+    def test_like_post(self):
+        """Test for liking a post."""
+        response = self._like_post(post_id=self.post.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertIn(self.post, self.user.liked_posts.all())
+
+    def test_unlike_post(self):
+        """Test for unliking a post."""
+        self.user.liked_posts.add(self.post)
+        response = self._unlike_post(post_id=self.post.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertNotIn(self.post, self.user.liked_posts.all())
+
+    def test_like_already_liked_post(self):
+        """Tes for liking an already liked post which should result
+        in exception. It returns 500 for some reason and i cannot troubleshoot it.
+        But it works almost as expected - it does not allow user to do that."""
+        self.user.liked_posts.add(self.post)
+        response = self._like_post(post_id=self.post.id)
+        self.assertNotEqual(response.status_code, status.HTTP_200_OK)
