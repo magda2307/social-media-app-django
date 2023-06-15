@@ -114,6 +114,13 @@ class AuthTokenSerializer(serializers.Serializer):
 class FollowSerializer(serializers.Serializer):
     """Serializer for the following/unfollowing actions."""
     user_id = serializers.IntegerField()
+
+
+class FollowerSerializer(serializers.ModelSerializer):
+    """Serializer for the User object in followers/following list."""
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'profile_picture']
     
 
 class LikeSerializer(serializers.ModelSerializer):
