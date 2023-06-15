@@ -230,7 +230,7 @@ class UserLikePostView(APIView):
 
 class UserLikesListView(ListAPIView):
     """API view for retrieving a list of user's liked posts."""
-    serializer_class = LikeSerializer
+    serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
