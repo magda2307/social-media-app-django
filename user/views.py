@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _
 from rest_framework import viewsets
 from rest_framework.exceptions import APIException, NotFound
 from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 
 class ObtainAuthTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
@@ -98,36 +99,27 @@ class UserFollowView(APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UserFollowersListView(ListAPIView):
-    """API view for listing followers for specified user."""
+class UserRelationListView(ListAPIView):
+    """API view for listing followers or following for specified user."""
     serializer_class = FollowerSerializer
     queryset = User.objects.all()
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, id):
-        """Get list of specified user followers."""
+    def get_queryset(self, user, relation):
+        if relation == 'followers':
+            return user.followers.all()
+        elif relation == 'following':
+            return user.following.all()
+        else:
+            raise serializers.ValidationError('Invalid relation.')
+
+    def get(self, request, id, relation):
+        """Get list of specified user followers or following."""
         try:
             user = self.queryset.get(id=id)
-            followers = user.followers.all()
-            serializer = self.serializer_class(followers, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
-
-
-class UserFollowingListView(ListAPIView):
-    """API view for listing following for specified user."""
-    serializer_class = FollowerSerializer
-    queryset = User.objects.all()
-    authentication_classes = [authentication.TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, id):
-        try:
-            user = self.queryset.get(id=id)
-            following = user.following.all()
-            serializer = self.serializer_class(following, many=True)
+            queryset = self.get_queryset(user, relation)
+            serializer = self.serializer_class(queryset, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'error': _('User not found.')}, status=status.HTTP_404_NOT_FOUND)
