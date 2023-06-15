@@ -86,17 +86,16 @@ class UserFollowView(APIView):
         if serializer.is_valid():
             user_id = serializer.validated_data['user_id']
             user_to_unfollow = get_object_or_404(User, id=user_id)
-            if user_to_unfollow in request.user.following.all():
-                request.user.following.remove(user_to_unfollow)
-                return Response(
-                    {"message": f"You have unfollowed {user_to_unfollow.email}."},
-                    status=status.HTTP_204_NO_CONTENT
-                )
-            else:
+            if user_to_unfollow not in request.user.following.all():
                 return Response(
                     {'error': f"You are not following {user_to_unfollow.email}."},
                     status=status.HTTP_409_CONFLICT
                 )
+            request.user.following.remove(user_to_unfollow)
+            return Response(
+                {"message": f"You have unfollowed {user_to_unfollow.email}."},
+                status=status.HTTP_204_NO_CONTENT
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserFollowersListView(ListAPIView):
