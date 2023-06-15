@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer, LikeSerializer, UserUpdateSerializer
+from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer, LikeSerializer, UserUpdateSerializer, FollowerSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework import authentication, permissions, status
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -100,7 +100,7 @@ class UserFollowView(APIView):
 
 class UserFollowersListView(ListAPIView):
     """API view for listing followers for specified user."""
-    serializer_class = UserSerializer
+    serializer_class = FollowerSerializer
     queryset = User.objects.all()
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
@@ -118,7 +118,7 @@ class UserFollowersListView(ListAPIView):
 
 class UserFollowingListView(ListAPIView):
     """API view for listing following for specified user."""
-    serializer_class = UserSerializer
+    serializer_class = FollowerSerializer
     queryset = User.objects.all()
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
