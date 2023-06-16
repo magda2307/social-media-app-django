@@ -11,6 +11,13 @@ from rest_framework import viewsets
 from rest_framework.exceptions import APIException, NotFound
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
+
+class IsOwnerOrReadOnly(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # Allow GET, HEAD, or OPTIONS requests,
+        # Allow write permissions only if the user is the owner of the post
+        return True if request.method in SAFE_METHODS else obj.user == request.user
 
 class ObtainAuthTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
@@ -130,7 +137,8 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly | IsAdminUser]
+
 
 
 class TagListCreateView(ListCreateAPIView):
