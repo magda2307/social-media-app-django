@@ -263,8 +263,5 @@ class PostLikesListView(ListAPIView):
 
     def get_queryset(self):
         post_id = self.kwargs['post_id']
-        try:
-            post = Post.objects.get(id=post_id)
-        except Post.DoesNotExist:
-            raise NotFound("Post not found.")
+        post = get_object_or_404(Post, id=post_id)
         return post.likes.all()
