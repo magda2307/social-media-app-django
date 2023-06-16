@@ -13,12 +13,20 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
 
-class IsOwnerOrReadOnly(BasePermission):
+class IsOwnerOrAdminOrSafeMethod(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        # Allow GET, HEAD, or OPTIONS requests,
-        # Allow write permissions only if the user is the owner of the post
-        return True if request.method in SAFE_METHODS else obj.user == request.user
+        # Allow admin users to perform any action
+        if request.user.is_staff:
+            return True
 
+        # Allow authenticated users to retrieve their own profile
+        return bool(
+            request.user.is_authenticated
+            and (
+                request.method in permissions.SAFE_METHODS
+                or obj.user == request.user
+            )
+        )
 class ObtainAuthTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
     serializer_class = AuthTokenSerializer
@@ -69,6 +77,15 @@ class UserProfileEditView(UpdateAPIView):
         return self.request.user
 
 
+#Not sure yet which implementation is better.
+"""class UserProfileView(ListCreateAPIView, RetrieveUpdateDestroyAPIView):
+    #API view for user profile listing, retrieval, creation, update, and deletion.
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrSafeMethod]
+    lookup_field = 'id'
+"""
 class UserFollowView(APIView):
     """API view for following/unfollowing another user. """
     serializer_class = FollowSerializer
@@ -137,12 +154,12 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly | IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrSafeMethod | IsAdminUser]
 
 
 
 class TagListCreateView(ListCreateAPIView):
-    """API view for creating and retrieving Tags."""
+    """API view for creating and listing Tags."""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     authentication_classes = [authentication.TokenAuthentication]
