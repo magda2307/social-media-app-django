@@ -46,7 +46,6 @@ class PostSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the User object."""
     posts = PostSerializer(many=True, required=False,read_only=True)
-
     class Meta:
         model = User
         fields = ['id', 'email', 'password', 'profile_picture', 'bio', 'is_staff',
@@ -77,7 +76,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserUpdateSerializer(UserSerializer):
     """Serializer for updating the User profile."""
-
     class Meta(UserSerializer.Meta):
         extra_kwargs = {
             'password': {'write_only': False, 'required': False}
@@ -114,6 +112,12 @@ class AuthTokenSerializer(serializers.Serializer):
 class FollowSerializer(serializers.Serializer):
     """Serializer for the following/unfollowing actions."""
     user_id = serializers.IntegerField()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """Serializer for changing password action."""
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, min_length=5,required=True)
 
 
 class FollowerSerializer(serializers.ModelSerializer):

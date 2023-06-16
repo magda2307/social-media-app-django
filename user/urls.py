@@ -16,6 +16,7 @@ from .views import (
     PostLikesListView,
     UserLikesListView,
     UserLikePostView,
+    ChangePasswordView,
 )
 
 router = routers.DefaultRouter()
@@ -26,11 +27,11 @@ urlpatterns = [
     path('login/', UserLoginView.as_view(), name='user-login'),
     path('profile/<int:id>/', UserProfileView.as_view(), name='user-profile'),
     path('profile/edit/', UserProfileEditView.as_view(), name='user-profile-edit'),
+    path('profile/change-password/',ChangePasswordView.as_view(), name='user-profile-change-password'),
     path('api-token-auth/', ObtainAuthTokenView.as_view(), name='create-token'),
     path('follow/', UserFollowView.as_view(), name='user-follow'),
     path('unfollow/', UserFollowView.as_view(), name='user-unfollow'),
-    path('profile/<int:id>/<str:relation>/', UserRelationListView.as_view(), name='user-profile-following'),
-    path('profile/<int:id>/<str:relation>/', UserRelationListView.as_view(), name='user-profile-followers'),
+    path('profile/<int:id>/<str:relation>/', UserRelationListView.as_view(), name='user-profile-follow'),
     path('', include(router.urls)),
     path('tags/',TagListCreateView.as_view(), name='tags'),
     path('tags/user/', UserTagListView.as_view(), name='tags-user'),

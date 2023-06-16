@@ -179,6 +179,7 @@ class UserProfileEditTestCase(TestCase):
             'bio': 'New bio'
         }
         self.posts_url = reverse('posts-list')
+        self.change_password_url = reverse('user-profile-change-password')
         
     def test_user_profile_edit_bio(self):
         """Test user profile edit API endpoint for updating the bio field."""
@@ -198,6 +199,26 @@ class UserProfileEditTestCase(TestCase):
         self.assertEqual(posts[0].text, 'post1')
         self.assertEqual(posts[1].text, 'post2')
 
+    def test_user_change_password(self):
+        """Test user change password."""
+        payload ={'old_password':'password123',
+                'new_password':'new_password'}
+        response = self.client.put(self.change_password_url, payload, format='json')
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+
+    def test_user_change_password_incorrect_old(self):
+        """Test user change password - old password is incorrect."""
+        payload ={'old_password':'bad_password',
+                'new_password':'new_password'}
+        response = self.client.put(self.change_password_url, payload, format='json')
+
+    def test_user_change_password_incorrect_new(self):
+        """Test user change password - new password is incorrect."""
+        payload ={'old_password':'password123',
+                'new_password':'1'}
+        response = self.client.put(self.change_password_url, payload, format='json')
+        self.assertEqual(response.status_code,status.HTTP_400_BAD_REQUEST)
+                
 
 class PostCreationWithExistingOrNewTagsTest(TestCase):
     """Tests for creating post with existing tags or with tags

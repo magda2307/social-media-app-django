@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer, LikeSerializer, UserUpdateSerializer, FollowerSerializer
+from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer, LikeSerializer, UserUpdateSerializer, FollowerSerializer, ChangePasswordSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework import authentication, permissions, status
 from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -27,6 +27,9 @@ class IsOwnerOrAdminOrSafeMethod(permissions.BasePermission):
                 or obj.user == request.user
             )
         )
+
+
+
 class ObtainAuthTokenView(ObtainAuthToken):
     """Create a new auth token for a user."""
     serializer_class = AuthTokenSerializer
@@ -76,7 +79,31 @@ class UserProfileEditView(UpdateAPIView):
     def get_object(self):
         return self.request.user
 
-
+class ChangePasswordView(UpdateAPIView):
+    """API view for user to change their password."""
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        return self.request.user
+    
+    def perform_update(self, serializer):
+        user = self.get_object()
+        old_password = serializer.validated_data.get('old_password')
+        new_password = serializer.validated_data.get('new_password')
+        
+        #check if the old password matches current user's password
+        if not user.check_password(old_password):
+            raise serializers.ValidationError('Invalid old password.')
+        user.set_password(new_password)
+        user.save()
+        
+        return user
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        response.data['message'] = _('Password has been changed successfully.')
+        return response   
+    
 #Not sure yet which implementation is better.
 """class UserProfileView(ListCreateAPIView, RetrieveUpdateDestroyAPIView):
     #API view for user profile listing, retrieval, creation, update, and deletion.
