@@ -50,14 +50,19 @@ class UserRegistrationView(APIView):
     def post(self, request):
         """Handle user registration."""
         form = UserRegistration(request.POST)
-        if form.is_valid():  # Validate the form
+        errors =dict()
+        if form.is_valid():
             serializer = self.serializer_class(data=form.cleaned_data)
             if serializer.is_valid():
                 serializer.save()
                 return Response({'message': 'User registered successfully.'}, status=status.HTTP_201_CREATED)
-        errors = dict(form.errors)
-        errors.update(serializer.errors)
+            else:
+                errors.update(serializer.errors)
+                return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            errors.update(form.errors)
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserLoginView(APIView):
     """API View for user login."""
