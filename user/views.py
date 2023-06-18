@@ -50,7 +50,7 @@ class UserRegistrationView(APIView):
     def post(self, request):
         """Handle user registration."""
         form = UserRegistration(request.POST)
-        errors =dict()
+        errors =dict{}
         if form.is_valid():
             serializer = self.serializer_class(data=form.cleaned_data)
             if serializer.is_valid():
