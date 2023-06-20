@@ -28,7 +28,8 @@ class UserRegistrationLoginTestCase(TestCase):
 
     def test_user_registration_duplicate_email(self):
         """Test user registration API endpoint with already registered mail."""
-        self.client.post(self.register_url, self.user_data, format='json')
+        res1=self.client.post(self.register_url, self.user_data, format='json')
+        self.assertEqual(res1.status_code,status.HTTP_201_CREATED)
         response = self.client.post(self.register_url, self.user_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(User.objects.count(), 1)
