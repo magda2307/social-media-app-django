@@ -476,11 +476,22 @@ class PostViewSetTestCase(TestCase):
         self.client.force_authenticate(user=self.user)
         self.view = PostViewSet.as_view({'get': 'list'})
         self.factory = APIRequestFactory()
-        # Create some test posts
-        Post.objects.create(tags=['tag1', 'tag2'], likes=5, text='Lorem ipsum')
-        Post.objects.create(tags=['tag2', 'tag3'], likes=10, text='Dolor sit amet')
-        Post.objects.create(tags=['tag3', 'tag4'], likes=8, text='Consectetur adipiscing elit')
-        
+        # Create some test tags
+        tag1 = Tag.objects.create(name='tag1')
+        tag2 = Tag.objects.create(name='tag2')
+        tag3 = Tag.objects.create(name='tag3')
+        tag4 = Tag.objects.create(name='tag4')
+
+        # Create some test posts and associate tags
+        post1 = Post.objects.create(text='Lorem ipsum', user=self.user)
+        post1.tags.set([tag1, tag2])
+        post1.likes.set((5),)
+        post2 = Post.objects.create(text='Dolor sit amet', user=self.user)
+        post2.likes.set((10),)
+        post2.tags.set([tag2, tag3])
+        post3 = Post.objects.create(text='Consectetur adipiscing elit', user=self.user)
+        post3.tags.set([tag3, tag4])
+        post3.likes.set((8),)
     def test_list_posts(self):
         url = '/posts/'
         request = self.factory.get(url)
