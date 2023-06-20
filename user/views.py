@@ -14,7 +14,9 @@ from rest_framework import serializers
 from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
 from .forms import UserRegistration
 from rest_framework.renderers import JSONRenderer
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .filters import PostFilter
 REGISTER_TEMPLATE = 'register.html'
 
 class IsOwnerOrAdminOrSafeMethod(permissions.BasePermission):
@@ -202,6 +204,8 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrSafeMethod | IsAdminUser]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = PostFilter
 
 
 class TagListCreateView(ListCreateAPIView):

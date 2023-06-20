@@ -2,10 +2,12 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
+
+from .views import PostViewSet
 from .models import Post, Tag
 from django.contrib.auth import get_user_model
 from .serializers import TagSerializer
-
+from rest_framework.test import APIRequestFactory
 User = get_user_model()
 
 class UserRegistrationLoginTestCase(TestCase):
@@ -465,3 +467,42 @@ class PostLikesListViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['email'], 'user2@example.com')
+
+class PostViewSetTestCase(TestCase):
+    """Tests for ordering and filtering tests for posts."""
+    def setUp(self):
+        self.user = User.objects.create_user(email='user1@example.com', password='password1')
+        self.client =APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.view = PostViewSet.as_view({'get': 'list'})
+        self.factory = APIRequestFactory()
+        # Create some test posts
+        Post.objects.create(tags=['tag1', 'tag2'], likes=5, text='Lorem ipsum')
+        Post.objects.create(tags=['tag2', 'tag3'], likes=10, text='Dolor sit amet')
+        Post.objects.create(tags=['tag3', 'tag4'], likes=8, text='Consectetur adipiscing elit')
+        
+    def test_list_posts(self):
+        url = '/posts/'
+        request = self.factory.get(url)
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
+
+    def test_ordering_by_date_created(self):
+        url = '/posts/?ordering=date_created'
+        request = self.factory.get(url)
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
+        self.assertEqual(response.data[0]['title'], 'Post 1')  # First post should be the oldest
+
+    def test_ordering_by_likes_descending(self):
+        url = '/posts/?ordering=-likes'
+        request = self.factory.get(url)
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
+        self.assertEqual(response.data[0]['title'], 'Post 2')  # First post should have the most likes
