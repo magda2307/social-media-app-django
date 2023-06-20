@@ -14,7 +14,9 @@ from rest_framework import serializers
 from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
 from .forms import UserRegistration
 from rest_framework.renderers import JSONRenderer
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .filters import PostFilter
 REGISTER_TEMPLATE = 'register.html'
 
 class IsOwnerOrAdminOrSafeMethod(permissions.BasePermission):
@@ -46,25 +48,26 @@ class UserRegistrationView(APIView):
     permission_classes = []
     renderer_classes = [JSONRenderer]
 
-    def get(self, request):
-        form = UserRegistration()
-        return render(request, REGISTER_TEMPLATE, {'form':form})
-    
+#    def get(self, request):
+#        form = UserRegistration()
+#        return render(request, REGISTER_TEMPLATE, {'form':form})
+#    
     def post(self, request):
         """Handle user registration."""
-        form = UserRegistration(request.POST)
-        errors =dict{}
-        if form.is_valid():
-            serializer = self.serializer_class(data=form.cleaned_data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({'message': 'User registered successfully.'}, status=status.HTTP_201_CREATED)
-            else:
-                errors.update(serializer.errors)
-                return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+#        if form.is_valid():
+#            serializer = self.serializer_class(data=form.cleaned_data)
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'User registered successfully.'}, status=status.HTTP_201_CREATED)
         else:
-            errors.update(form.errors)
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+#        form = UserRegistration(request.POST)
+            errors = {}
+            errors.update(serializer.errors)
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+#        else:
+#            errors.update(form.errors)
+#        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLoginView(APIView):
@@ -95,6 +98,7 @@ class UserProfileEditView(UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
 
 class ChangePasswordView(UpdateAPIView):
     """API view for user to change their password."""
@@ -167,6 +171,7 @@ class UserFollowView(APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserRelationListView(ListAPIView):
     """API view for listing followers or following for specified user."""
     serializer_class = FollowerSerializer
@@ -199,7 +204,8 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdminOrSafeMethod | IsAdminUser]
-
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = PostFilter
 
 
 class TagListCreateView(ListCreateAPIView):
@@ -289,6 +295,7 @@ class UserLikePostView(APIView):
         except APIException as e:
             return Response({'error': str(e)}, status=e.status_code)
 
+
 class UserLikesListView(ListAPIView):
     """API view for retrieving a list of user's liked posts."""
     serializer_class = PostSerializer
@@ -298,6 +305,7 @@ class UserLikesListView(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return user.liked_posts.all()
+
 
 class PostLikesListView(ListAPIView):
     """API view for retrieving a list of users that liked particular post."""
