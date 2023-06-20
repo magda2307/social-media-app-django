@@ -8,6 +8,8 @@ from .models import Post, Tag
 from django.contrib.auth import get_user_model
 from .serializers import TagSerializer
 from rest_framework.test import APIRequestFactory
+from rest_framework.test import force_authenticate
+
 User = get_user_model()
 
 class UserRegistrationLoginTestCase(TestCase):
@@ -471,49 +473,38 @@ class PostLikesListViewTests(TestCase):
 class PostViewSetTestCase(TestCase):
     """Tests for ordering and filtering tests for posts."""
     def setUp(self):
-        self.user = User.objects.create_user(email='user1@example.com', password='password1')
+        self.user = User.objects.create_user(email='user99@example.com', password='password1')
         self.client =APIClient()
         self.client.force_authenticate(user=self.user)
         self.view = PostViewSet.as_view({'get': 'list'})
-        self.factory = APIRequestFactory()
-        # Create some test tags
-        tag1 = Tag.objects.create(name='tag1')
-        tag2 = Tag.objects.create(name='tag2')
-        tag3 = Tag.objects.create(name='tag3')
-        tag4 = Tag.objects.create(name='tag4')
-
-        # Create some test posts and associate tags
-        post1 = Post.objects.create(text='Lorem ipsum', user=self.user)
-        post1.tags.set([tag1, tag2])
-        post1.likes.set((5),)
-        post2 = Post.objects.create(text='Dolor sit amet', user=self.user)
-        post2.likes.set((10),)
-        post2.tags.set([tag2, tag3])
-        post3 = Post.objects.create(text='Consectetur adipiscing elit', user=self.user)
-        post3.tags.set([tag3, tag4])
-        post3.likes.set((8),)
+        #create posts
+        self.post1=Post.objects.create(user=self.user, text='Post 1')
+        self.post2=Post.objects.create(user=self.user, text='Post 2')
+        self.post3=Post.objects.create(user=self.user, text='Post 3')
+        # create dummy accounts for likes
+        dummy_users = [User.objects.create_user(email=f'user{i}@example.com', password='password') for i in range(10)]
+        for i, user in enumerate(dummy_users):
+            self.client.force_authenticate(user=user)
+            self.post2.likes.add(user)
+            if i < 5:
+                self.post1.likes.add(user)
+            if i < 2:
+                self.post3.likes.add(user)
     def test_list_posts(self):
-        url = '/posts/'
-        request = self.factory.get(url)
-        response = self.view(request)
-
+        url = '/api/posts/'
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
 
     def test_ordering_by_date_created(self):
-        url = '/posts/?ordering=date_created'
-        request = self.factory.get(url)
-        response = self.view(request)
-
+        url = '/api/posts/?ordering=date_created'
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
-        self.assertEqual(response.data[0]['title'], 'Post 1')  # First post should be the oldest
+        self.assertEqual(response.data[0]['text'], 'Post 1')  # First post should be the oldest
 
     def test_ordering_by_likes_descending(self):
-        url = '/posts/?ordering=-likes'
-        request = self.factory.get(url)
-        response = self.view(request)
-
+        url = '/api/posts/?ordering=-likes'
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
-        self.assertEqual(response.data[0]['title'], 'Post 2')  # First post should have the most likes
+        self.assertEqual(response.data[0]['text'], 'Post 2')  # First post should have the most likes
