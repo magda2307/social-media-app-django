@@ -535,3 +535,75 @@ class PostViewSetTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['text'], 'Post 2')
+
+    def test_filtering_by_date_created_lte(self):
+        """Test checking listing posts filtered by lte date_created."""
+        url = '/api/posts/'
+        date_created = date.today().isoformat()
+        params = {'date_created_lte': date_created}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 3)
+
+    def test_filtering_by_date_created_range(self):
+        """Test checking listing posts filtered by date_created range."""
+        url = '/api/posts/'
+        today = date.today()
+        start_date = today - timedelta(days=7)
+        end_date = today + timedelta(days=7)
+        params = {'date_created__gte': start_date, 'date_created__lte': end_date}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 3)
+
+    def test_filtering_by_likes_exact(self):
+        """Test checking listing posts filtered by exact likes count."""
+        url = '/api/posts/'
+        params = {'likes_count__exact': 5}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['text'], 'Post 1')
+
+    def test_filtering_by_likes_range(self):
+        """Test checking listing posts filtered by likes count range."""
+        url = '/api/posts/'
+        params = {'likes_count__gte': 3, 'likes_count__lte': 12}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+
+    def test_filtering_by_text(self):
+        """Test checking listing posts filtered by text field."""
+        url = '/api/posts/'
+        params = {'text': 'Post'}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 3)
+
+    def test_filtering_by_tag_name_and_text(self):
+        """Test checking listing posts filtered by tag name and text field."""
+        url = '/api/posts/'
+        params = {'tags__name': 'tag1', 'text': 'Post'}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+
+    def test_filtering_by_tag_name_and_likes(self):
+        """Test checking listing posts filtered by tag name and likes count."""
+        url = '/api/posts/'
+        params = {'tags__name': 'tag1', 'likes_count__gte': 8}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['text'], 'Post 2')
+
+    def test_filtering_by_tag_name_and_date_created(self):
+        """Test checking listing posts filtered by tag name and date_created."""
+        url = '/api/posts/'
+        date_created = date.today().isoformat()
+        params = {'tags__name': 'tag1', 'date_created_lte': date_created}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+        #self.assertEqual(response.data[0]['text'], 'Post 1')
