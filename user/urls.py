@@ -17,6 +17,7 @@ from .views import (
     UserLikesListView,
     UserLikePostView,
     ChangePasswordView,
+    FollowingFeedView,
 )
 
 router = routers.DefaultRouter()
@@ -41,4 +42,5 @@ urlpatterns = [
     path('likes/', UserLikesListView.as_view(), name='user-likes'),
     path('posts/<int:post_id>/like/', UserLikePostView.as_view(), name='post-like'),
     path('posts/<int:post_id>/unlike/', UserLikePostView.as_view(), name='post-unlike'),
+    path('feed/', FollowingFeedView.as_view(), name='user-feed')
 ]

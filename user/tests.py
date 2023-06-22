@@ -606,4 +606,41 @@ class PostViewSetTestCase(TestCase):
         response = self.client.get(url, params)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
-        #self.assertEqual(response.data[0]['text'], 'Post 1')
+
+
+class FollowingFeedViewTestCase(TestCase):
+    """Tests for checking users feed view."""
+    def setUp(self):
+        self.user = User.objects.create_user(email='user@example.com', password='password1')
+        self.user2 = User.objects.create_user(email='user2@example.com', password='password1')
+        self.user3 = User.objects.create_user(email='user3@example.com', password='password1')
+        self.client =APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.view = PostViewSet.as_view({'get': 'list'})
+        # create posts
+        self.post1=Post.objects.create(user=self.user2, text='Post 1')
+        self.post2=Post.objects.create(user=self.user2, text='Post 2')
+        self.post3=Post.objects.create(user=self.user2, text='Post 3')
+        self.post4=Post.objects.create(user=self.user3, text='Post A')
+        self.post5=Post.objects.create(user=self.user3, text='Post B')
+        self.post6=Post.objects.create(user=self.user, text='Post XYZ')
+        #create follow relation
+        self.user.following.add(self.user2)
+        self.user.following.add(self.user3)
+
+    def test_following_feed_view(self):
+        url = '/api/feed/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 5)  # The feed should contain 3 posts
+        
+        # Verify the content of the posts in the feed
+        texts = [post['text'] for post in data]
+        self.assertIn('Post 1', texts)
+        self.assertIn('Post 2', texts)
+        self.assertIn('Post 3', texts)
+        self.assertIn('Post A', texts)
+        self.assertIn('Post B', texts)
+        # Verify that posts from the user's own account are not in the feed
+        self.assertNotIn('Post XYZ', texts)
