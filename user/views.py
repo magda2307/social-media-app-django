@@ -1,23 +1,37 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .serializers import UserSerializer, AuthTokenSerializer, FollowSerializer, PostSerializer, TagSerializer, LikeSerializer, UserUpdateSerializer, FollowerSerializer, ChangePasswordSerializer
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework import authentication, permissions, status
-from rest_framework.generics import RetrieveAPIView, UpdateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from .models import User, Post, Tag
-from rest_framework.settings import api_settings
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
-from rest_framework import viewsets
-from rest_framework.exceptions import APIException, NotFound
-from django.shortcuts import get_object_or_404, render
-from rest_framework import serializers
-from rest_framework.permissions import BasePermission, IsAdminUser, SAFE_METHODS
-from .forms import UserRegistration
-from rest_framework.renderers import JSONRenderer
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
-from .filters import PostFilter
 
+from rest_framework import authentication, filters, permissions, serializers, status, viewsets
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.exceptions import APIException
+from rest_framework.generics import (
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveAPIView,
+    RetrieveUpdateDestroyAPIView,
+    UpdateAPIView,
+)
+from rest_framework.permissions import IsAdminUser
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+from rest_framework.settings import api_settings
+from rest_framework.views import APIView
+
+from django_filters.rest_framework import DjangoFilterBackend
+
+from .filters import PostFilter
+from .models import User, Post, Tag
+from .serializers import (
+    UserSerializer,
+    AuthTokenSerializer,
+    FollowSerializer,
+    PostSerializer,
+    TagSerializer,
+    LikeSerializer,
+    UserUpdateSerializer,
+    FollowerSerializer,
+    ChangePasswordSerializer,
+)
 
 class IsOwnerOrAdminOrSafeMethod(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -48,27 +62,17 @@ class UserRegistrationView(APIView):
     permission_classes = []
     renderer_classes = [JSONRenderer]
 
-#    def get(self, request):
-#        form = UserRegistration()
-#        return render(request, REGISTER_TEMPLATE, {'form':form})
-#    
     def post(self, request):
         """Handle user registration."""
-#        if form.is_valid():
-#            serializer = self.serializer_class(data=form.cleaned_data)
+
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({'message': 'User registered successfully.'}, status=status.HTTP_201_CREATED)
         else:
-#        form = UserRegistration(request.POST)
             errors = {}
             errors.update(serializer.errors)
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-#        else:
-#            errors.update(form.errors)
-#        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class UserLoginView(APIView):
     """API View for user login."""
