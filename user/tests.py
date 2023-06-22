@@ -224,7 +224,7 @@ class UserProfileEditTestCase(TestCase):
                 'new_password':'1'}
         response = self.client.put(self.change_password_url, payload, format='json')
         self.assertEqual(response.status_code,status.HTTP_400_BAD_REQUEST)
-                
+
 
 class PostCreationWithExistingOrNewTagsTest(TestCase):
     """Tests for creating post with existing tags or with tags
