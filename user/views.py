@@ -17,7 +17,7 @@ from rest_framework.renderers import JSONRenderer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from .filters import PostFilter
-REGISTER_TEMPLATE = 'register.html'
+
 
 class IsOwnerOrAdminOrSafeMethod(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):

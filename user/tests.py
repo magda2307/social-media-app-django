@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -477,7 +478,7 @@ class PostViewSetTestCase(TestCase):
         self.client =APIClient()
         self.client.force_authenticate(user=self.user)
         self.view = PostViewSet.as_view({'get': 'list'})
-        #create posts
+        # create posts
         self.post1=Post.objects.create(user=self.user, text='Post 1')
         self.post2=Post.objects.create(user=self.user, text='Post 2')
         self.post3=Post.objects.create(user=self.user, text='Post 3')
@@ -490,21 +491,47 @@ class PostViewSetTestCase(TestCase):
                 self.post1.likes.add(user)
             if i < 2:
                 self.post3.likes.add(user)
+        # add tags to posts        
+        self.tag1 = Tag.objects.create(user=self.user, name='tag1')
+        self.tag2 = Tag.objects.create(user=self.user, name='tag2')
+        self.post1.tags.add(self.tag1)
+        self.post2.tags.add(self.tag1)
+        self.post2.tags.add(self.tag2)
     def test_list_posts(self):
+        """Test checking listing posts."""
         url = '/api/posts/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
+        self.assertEqual(len(response.data), 3)
 
     def test_ordering_by_date_created(self):
+        """Test checking listing posts ordered by date_created."""
         url = '/api/posts/?ordering=date_created'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 3)  # Expecting 3 posts in the response
-        self.assertEqual(response.data[0]['text'], 'Post 1')  # First post should be the oldest
+        self.assertEqual(len(response.data), 3)
+        self.assertEqual(response.data[0]['text'], 'Post 1') 
 
     def test_ordering_by_likes_descending(self):
+        """Test checking listing posts ordered by likes."""
         url = '/api/posts/?ordering=-likes'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['text'], 'Post 2')  # First post should have the most likes
+        self.assertEqual(response.data[0]['text'], 'Post 2')
+        
+    def test_filtering_by_tag__name(self):
+        """Test checking listing posts filtered by tag."""
+        url = '/api/posts/'
+        params = {'tags__name':'tag1'}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+
+    def test_filtering_by_tags__name(self):
+        """Test checking listing posts filtered by tags."""
+        url = '/api/posts/'
+        params = {'tags__name':'tag1, tag2'}
+        response = self.client.get(url, params)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['text'], 'Post 2')
