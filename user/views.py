@@ -17,7 +17,7 @@ from rest_framework.renderers import JSONRenderer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from .filters import PostFilter
-REGISTER_TEMPLATE = 'register.html'
+
 
 class IsOwnerOrAdminOrSafeMethod(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -317,3 +317,15 @@ class PostLikesListView(ListAPIView):
         post_id = self.kwargs['post_id']
         post = get_object_or_404(Post, id=post_id)
         return post.likes.all()
+    
+class FollowingFeedView(ListAPIView):
+    """API view that returns a list of posts that belong to the accounts followed
+    by the authenticated user."""    
+    serializer_class = PostSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        followed_accounts = user.following.all()
+        return Post.objects.filter(user__in=followed_accounts)
