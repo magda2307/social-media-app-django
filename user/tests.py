@@ -14,7 +14,11 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 import requests
 import os
 
+from django.conf import settings
+
 User = get_user_model()
+
+TEST_IMAGES = ['file1.png', 'file2.png', 'file3.png']
 
 class UserRegistrationLoginTestCase(TestCase):
     def setUp(self):
@@ -648,75 +652,61 @@ class FollowingFeedViewTestCase(TestCase):
         # Verify that posts from the user's own account are not in the feed
         self.assertNotIn('Post XYZ', texts)
 
-
-
-
 class UserProfilePictureTestCase(TestCase):
-    """Test cases for working with pictures in users profiles."""
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(email='test@example.com', password='testpassword')
-        self.client.force_authenticate(user=self.user)
-
-    def generate_mock_image_file(self, width, height):
-        image_path = self.generate_mock_image(width, height)
-        image_file = SimpleUploadedFile(
-            name=f"mock_image_{width}x{height}.jpg",
-            content=open(image_path, 'rb').read(),
-            content_type='image/jpeg'
+        self.user = User.objects.create_user(
+            email='test@example.com',
+            password='testpassword'
         )
-        self.delete_mock_image(image_path)
-        return image_file
-
-    def generate_mock_image(self, width, height):
-        url = f"https://www.colorbook.io/imagecreator.php?hex=1168A6&width={width}&height={height}&text=Hello"
-        print(url)
-        response = requests.get(url)
-        print(response)
-        if response.status_code == 200:
-            image_path = f"mock_image_{width}x{height}.jpg"
-            with open(image_path, "wb") as file:
-                file.write(response.content)
-            return image_path
-        return None
-
-    def delete_mock_image(self, image_path):
-        if os.path.exists(image_path):
-            os.remove(image_path)
-            print(f"Deleted {image_path}")
+        self.client.force_authenticate(self.user)
+    def tearDown(self):
+        # Delete the profile picture files after the tests
+        if self.user.profile_picture:
+            os.remove(self.user.profile_picture.path)
 
     def test_upload_profile_picture(self):
-        test_image_width = 500
-        test_image_height = 300
-        image_file = self.generate_mock_image_file(test_image_width, test_image_height)
-        url = '/api/user/profile/edit/'
-        payload = {'profile_picture': image_file}
-        response = self.client.post(url, payload, format='multipart')
+        # Open the image file for uploading
+        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]), 'rb') as image:
+            response = self.client.patch(
+                f'/api/users/edit/',
+                {'profile_picture': image},
+                format='multipart'
+            )
+        print(response)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertTrue(self.user.profile_picture)
-        self.assertTrue(self.user.profile_picture.width, 300)
-        self.assertTrue(self.user.profile_picture.height, 300)
     
     def test_update_profile_picture(self):
-        initial_image_file = self.generate_mock_image_file(200, 200)
-        self.user.profile_picture = initial_image_file
-        self.user.save()
+        # Upload the initial profile picture
+        print(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]))
+        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]), 'rb') as image:
+            self.client.patch(
+                f'/api/profile/edit/',
+                {'profile_picture': image},
+                format='multipart'
+            )
 
-
-        new_image_width = 400
-        new_image_height = 400
-        new_image_file = self.generate_mock_image_file(new_image_width, new_image_height)
-        url = '/api/user/profile/edit/'
-        payload = {'profile_picture': new_image_file}
-        response = self.client.post(url,payload, format='multipart')
+        # Open the new image file for updating the profile picture
+        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[1]), 'rb') as image:
+            response = self.client.patch(
+                f'/api/profile/edit/',
+                {'profile_picture': image},
+                format='multipart'
+            )
+        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertTrue(self.user.profile_picture)
-        self.assertTrue(self.user.profile_picture.width, 300)
-        self.assertTrue(self.user.profile_picture.height, 300)
 
-    def tearDown(self):
-        # Clean up uploaded image files
-        if self.user.profile_picture:
-            self.user.profile_picture.delete()
+
+        # Open the image file for updating the profile picture
+        with open('temp/file3.png', 'rb') as image:
+            response = self.client.patch(
+                '/api/users/9999/',
+                {'profile_picture': image},
+                format='multipart'
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

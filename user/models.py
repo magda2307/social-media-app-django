@@ -79,7 +79,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         if self.profile_picture:
             temp_file_path = prepare_image_and_save_in_temp(self.profile_picture)
-            permanent_file_path = os.path.join(settings.MEDIA_ROOT, PROFILE_PICS_UPLOAD_PATH, f"{self.id}.jpg")
+            permanent_file_path = os.join(settings.MEDIA_ROOT, PROFILE_PICS_UPLOAD_PATH, f"{self.id}.jpg")
             move_image_to_permanent_location(temp_file_path, permanent_file_path)
             self.profile_picture = permanent_file_path
         super().save(*args, **kwargs)
