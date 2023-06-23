@@ -8,10 +8,17 @@ from .views import PostViewSet
 from .models import Post, Tag
 from django.contrib.auth import get_user_model
 from .serializers import TagSerializer
-from rest_framework.test import APIRequestFactory
-from rest_framework.test import force_authenticate
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+import requests
+import os
+
+from django.conf import settings
 
 User = get_user_model()
+
+TEST_IMAGES = ['file1.png', 'file2.png', 'file3.png']
 
 class UserRegistrationLoginTestCase(TestCase):
     def setUp(self):
@@ -633,7 +640,7 @@ class FollowingFeedViewTestCase(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(len(data), 5)  # The feed should contain 3 posts
+        self.assertEqual(len(data), 5)  
         
         # Verify the content of the posts in the feed
         texts = [post['text'] for post in data]
@@ -644,3 +651,62 @@ class FollowingFeedViewTestCase(TestCase):
         self.assertIn('Post B', texts)
         # Verify that posts from the user's own account are not in the feed
         self.assertNotIn('Post XYZ', texts)
+
+class UserProfilePictureTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='test@example.com',
+            password='testpassword'
+        )
+        self.client.force_authenticate(self.user)
+    def tearDown(self):
+        # Delete the profile picture files after the tests
+        if self.user.profile_picture:
+            os.remove(self.user.profile_picture.path)
+
+    def test_upload_profile_picture(self):
+        # Open the image file for uploading
+        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]), 'rb') as image:
+            response = self.client.patch(
+                f'/api/users/edit/',
+                {'profile_picture': image},
+                format='multipart'
+            )
+        print(response)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.profile_picture)
+    
+    def test_update_profile_picture(self):
+        # Upload the initial profile picture
+        print(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]))
+        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]), 'rb') as image:
+            self.client.patch(
+                f'/api/profile/edit/',
+                {'profile_picture': image},
+                format='multipart'
+            )
+
+        # Open the new image file for updating the profile picture
+        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[1]), 'rb') as image:
+            response = self.client.patch(
+                f'/api/profile/edit/',
+                {'profile_picture': image},
+                format='multipart'
+            )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.profile_picture)
+
+
+        # Open the image file for updating the profile picture
+        with open('temp/file3.png', 'rb') as image:
+            response = self.client.patch(
+                '/api/users/9999/',
+                {'profile_picture': image},
+                format='multipart'
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
