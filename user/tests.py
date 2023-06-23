@@ -633,7 +633,7 @@ class FollowingFeedViewTestCase(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(len(data), 5)  # The feed should contain 3 posts
+        self.assertEqual(len(data), 5)  
         
         # Verify the content of the posts in the feed
         texts = [post['text'] for post in data]
