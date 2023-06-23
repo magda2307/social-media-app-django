@@ -1,29 +1,42 @@
-from io import BytesIO
 import os
+from io import BytesIO
+
+from PIL import Image
+
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from PIL import Image
-import settings
+from django.core.files.storage import default_storage
+
+from app import settings
+
+
 #Constants at the module level, may be moved to constants.py in future
 MAX_TAG_LENGTH = 50
-PROFILE_PICS_UPLOAD_PATH = 'profile_pics'
+PROFILE_PICS_UPLOAD_PATH = 'profile_pictures'
 POST_IMAGES_UPLOAD_PATH = 'post_images'
 PROFILE_PIC_SIZE_TUPLE = (300, 300)
 
 
 def prepare_image_and_save_in_temp(image, size_tuple=PROFILE_PIC_SIZE_TUPLE):
-    """Helper function to resize the image and to get the temporary file path."""
+    """Helper function to resize the image that returns the temporary file path."""
     img = Image.open(image)
     img.thumbnail(size_tuple)
     output = BytesIO()
     img.save(output, format='JPEG', quality=80)
     output.seek(0)
     
-    temp_file_path = os.join(settings.MEDIA_ROOT, 'temp', f"{image.name.split('.')[0]}.jpg")
+    temp_file_path = os.path.join(settings.MEDIA_ROOT, 'temp', f"{image.name.split('.')[0]}.jpg")
 
     with open(temp_file_path,'wb') as temp_file:
         temp_file.write(output.getvalue())
     return temp_file_path
+
+def move_image_to_permanent_location(image, destination):
+    """Helper function to move the image to its final destination. (dramatic)"""
+    with open(image, 'rb') as temp_file:
+        default_storage.save(destination, temp_file) 
+    # Delete the temporary file
+    os.remove(image)
 
 class UserManager(BaseUserManager):
     """Manager for users in the system."""
@@ -62,7 +75,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def __str__(self):
         return self.email
+    
+    def save(self, *args, **kwargs):
+        if self.profile_picture:
+            temp_file_path = prepare_image_and_save_in_temp(self.profile_picture)
+            permanent_file_path = os.path.join(settings.MEDIA_ROOT, PROFILE_PICS_UPLOAD_PATH, f"{self.id}.jpg")
+            move_image_to_permanent_location(temp_file_path, permanent_file_path)
+            self.profile_picture = permanent_file_path
+        super().save(*args, **kwargs)
 
+    def update(self, *args, **kwargs):
+        self.save()
+        super().save(*args, **kwargs)
+        
 
 class Post(models.Model):
     """Post model for the social media app."""
@@ -77,12 +102,19 @@ class Post(models.Model):
         return self.text
 
     def save(self, *args, **kwargs):
-        if self.profile_picture:
-            temp_file_path
-            permament_file_path
-            self.move_image_to_permament
-        
+        if self.image:
+            temp_file_path = prepare_image_and_save_in_temp(self.image)
+            permanent_file_path = os.path.join(settings.MEDIA_ROOT, POST_IMAGES_UPLOAD_PATH, f"{self.id}.jpg")
+            move_image_to_permanent_location(temp_file_path, permanent_file_path)
+            self.image = permanent_file_path
         super().save(*args, **kwargs)
+
+    def update(self, *args, **kwargs):
+        self.save()
+        super().save(*args, **kwargs)
+        
+
+
 
 class Tag(models.Model):
     """Tag model for the social media app. 
