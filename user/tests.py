@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from io import BytesIO
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -10,6 +11,7 @@ from django.contrib.auth import get_user_model
 from .serializers import TagSerializer
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from PIL import Image
 
 import requests
 import os
@@ -652,61 +654,56 @@ class FollowingFeedViewTestCase(TestCase):
         # Verify that posts from the user's own account are not in the feed
         self.assertNotIn('Post XYZ', texts)
 
-class UserProfilePictureTestCase(TestCase):
+class UserProfileEditTestCase(TestCase):
     def setUp(self):
+        # Create a user for testing
+        self.user = User.objects.create_user(email='test@example.com', password='password')
         self.client = APIClient()
-        self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpassword'
-        )
         self.client.force_authenticate(self.user)
-    def tearDown(self):
-        # Delete the profile picture files after the tests
-        if self.user.profile_picture:
-            os.remove(self.user.profile_picture.path)
 
-    def test_upload_profile_picture(self):
-        # Open the image file for uploading
-        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]), 'rb') as image:
-            response = self.client.patch(
-                f'/api/users/edit/',
-                {'profile_picture': image},
-                format='multipart'
-            )
-        print(response)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_set_profile_picture(self):
+        # Create a sample image
+        image = Image.new('RGB', (300, 300))
+        image_io = BytesIO()
+        image.save(image_io, format='JPEG')
+        image_io.seek(0)
+        image_file = SimpleUploadedFile('profile.jpg', image_io.getvalue())
+
+        # Set the profile picture for the user
+        self.client.login(email='test@example.com', password='password')
+        response = self.client.post('/profile/edit/', {'profile_picture': image_file}, format='multipart')
+
+        # Assert the response
+        self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
-        self.assertTrue(self.user.profile_picture)
-    
-    def test_update_profile_picture(self):
-        # Upload the initial profile picture
-        print(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]))
-        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[0]), 'rb') as image:
-            self.client.patch(
-                f'/api/profile/edit/',
-                {'profile_picture': image},
-                format='multipart'
-            )
+        self.assertIsNotNone(self.user.profile_picture)
 
-        # Open the new image file for updating the profile picture
-        with open(os.path.join(settings.MEDIA_ROOT, TEST_IMAGES[1]), 'rb') as image:
-            response = self.client.patch(
-                f'/api/profile/edit/',
-                {'profile_picture': image},
-                format='multipart'
-            )
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.profile_picture)
+def test_update_profile_picture(self):
+    # Set the initial profile picture for the user
+    initial_image = Image.new('RGB', (300, 300))
+    initial_image_io = BytesIO()
+    initial_image.save(initial_image_io, format='JPEG')
+    initial_image_io.seek(0)
+    initial_image_file = SimpleUploadedFile('profile.jpg', initial_image_io.getvalue())
+    self.user.profile_picture = initial_image_file
+    self.user.save()
 
+    # Create a new sample image for updating the profile picture
+    new_image = Image.new('RGB', (300, 300), color='red')
+    new_image_io = BytesIO()
+    new_image.save(new_image_io, format='JPEG')
+    new_image_io.seek(0)
+    new_image_file = SimpleUploadedFile('new_profile.jpg', new_image_io.getvalue())
 
-        # Open the image file for updating the profile picture
-        with open('temp/file3.png', 'rb') as image:
-            response = self.client.patch(
-                '/api/users/9999/',
-                {'profile_picture': image},
-                format='multipart'
-            )
+    # Update the profile picture for the user
+    self.client.login(email='test@example.com', password='password')
+    response = self.client.post('/profile/edit/', {'profile_picture': new_image_file}, format='multipart')
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    # Assert the response
+    self.assertEqual(response.status_code, 200)
+    self.user.refresh_from_db()
+    self.assertIsNotNone(self.user.profile_picture)
+    self.assertNotEqual(self.user.profile_picture.name, initial_image_file.name)
+
+    # Clean up the uploaded files
+    self.user.profile_picture.delete()
