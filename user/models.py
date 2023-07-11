@@ -7,7 +7,9 @@ from PIL import Image
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.files.storage import default_storage
-
+from django.core.validators import FileExtensionValidator, MinLengthValidator
+from django.core.exceptions import ValidationError
+import uuid
 from app import settings
 
 
@@ -39,6 +41,28 @@ def move_image_to_permanent_location(image, destination):
         save_image_to_location(temp_file, destination)
     # Delete the temporary file
     default_storage.delete(image)
+
+
+def generate_image_filename(instance, filename):
+    """Helper function to generate image name in UUID fashion."""
+    extension = os.path.splitext(filename)[1]
+    filename = f"{uuid.uuid4().hex}{extension}"
+    return filename
+
+
+def validate_image(image):
+    """Helper function to validate images using built-in Django validators."""
+    try:
+        validators = [
+            FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png']),
+            MinLengthValidator(limit_value=1, message="Image file is empty.")
+        ]
+        for validator in validators:
+            validator(image)
+    except ValidationError as e:
+        raise ValidationError(e.messages)
+
+
 
 
 class UserManager(BaseUserManager):
